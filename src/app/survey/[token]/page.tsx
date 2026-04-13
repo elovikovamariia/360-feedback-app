@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { appFetch } from "@/lib/app-fetch";
 
 type Competency = { id: string; title: string; description: string };
 
@@ -203,7 +204,7 @@ export default function SurveyPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/survey/${token}`);
+        const res = await appFetch(`/api/survey/${token}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Ошибка загрузки");
         if (cancelled) return;
@@ -259,7 +260,7 @@ export default function SurveyPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const res = await fetch(`/api/survey/${token}`, {
+    const res = await appFetch(`/api/survey/${token}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scores, text, competencyComments }),

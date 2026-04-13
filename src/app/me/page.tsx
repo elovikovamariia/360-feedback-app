@@ -1,16 +1,44 @@
+"use client";
+
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { useCallback, useEffect, useState } from "react";
 import { Breadcrumbs, PageHero } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
-import { getPreviewRoleFromCookies, resolveViewerPersonId } from "@/lib/demo-session";
-import { getDemoContext } from "@/lib/get-demo-context";
+import { appFetch } from "@/lib/app-fetch";
+import type { DemoContextPayload } from "@/lib/get-demo-context";
+import type { PreviewRoleId } from "@/lib/roles";
 
-export default async function MePage() {
-  const ctx = await getDemoContext();
-  const cookieStore = cookies();
-  const role = getPreviewRoleFromCookies(cookieStore);
-  const viewerId = await resolveViewerPersonId(cookieStore, role);
+type MePayload = {
+  ctx: DemoContextPayload | null;
+  viewerId: string | null;
+  role: PreviewRoleId;
+};
 
+export default function MePage() {
+  const [data, setData] = useState<MePayload | false>(false);
+
+  const load = useCallback(async () => {
+    const res = await appFetch("/api/me-context");
+    if (!res.ok) {
+      setData({ ctx: null, viewerId: null, role: "hr_admin" });
+      return;
+    }
+    setData((await res.json()) as MePayload);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (data === false) {
+    return (
+      <RoleGuard need="own_results">
+        <div className="card p-10 text-center text-slate-600">Загрузка…</div>
+      </RoleGuard>
+    );
+  }
+
+  const { ctx, viewerId, role } = data;
   const resultsHref =
     ctx && viewerId && (role === "manager" || role === "employee")
       ? `/results/${role === "manager" ? viewerId : ctx.revieweeId}?cycleId=${ctx.cycleId}`

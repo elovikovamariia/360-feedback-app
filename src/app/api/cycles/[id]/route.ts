@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getCycleDirectionBreakdown } from "@/lib/org-scope";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: { id: string } };
@@ -8,6 +9,7 @@ export async function GET(_req: Request, { params }: Params) {
   const cycle = await prisma.reviewCycle.findUnique({
     where: { id },
     include: {
+      scopedDirections: { include: { direction: { select: { id: true, num: true, name: true } } } },
       assignments: {
         include: {
           reviewee: { select: { id: true, name: true } },
@@ -33,14 +35,34 @@ export async function GET(_req: Request, { params }: Params) {
     byReviewee.set(a.revieweeId, cur);
   }
 
+  const otherCycles = await prisma.reviewCycle.findMany({
+    where: { id: { not: cycle.id } },
+    orderBy: { startsAt: "desc" },
+    take: 4,
+    select: { id: true, name: true },
+  });
+
+  const directionBreakdown = await getCycleDirectionBreakdown(cycle.id);
+
   return NextResponse.json({
-    cycle: { id: cycle.id, name: cycle.name, startsAt: cycle.startsAt, endsAt: cycle.endsAt },
+    cycle: {
+      id: cycle.id,
+      name: cycle.name,
+      startsAt: cycle.startsAt,
+      endsAt: cycle.endsAt,
+      semesterPeriodStartsAt: cycle.semesterPeriodStartsAt,
+      semesterPeriodEndsAt: cycle.semesterPeriodEndsAt,
+      scopeType: cycle.scopeType,
+      scopedDirections: cycle.scopedDirections,
+    },
     reviewees: [...byReviewee.values()].map((v) => ({
       ...v.reviewee,
       completed: v.completed,
       total: v.total,
       completionRate: v.total ? Math.round((v.completed / v.total) * 100) : 0,
     })),
+    directionBreakdown,
+    otherCycles,
     assignments: cycle.assignments.map((a) => ({
       id: a.id,
       revieweeId: a.revieweeId,
@@ -49,6 +71,7 @@ export async function GET(_req: Request, { params }: Params) {
       reviewerName: a.reviewer.name,
       relationship: a.relationship,
       submittedAt: a.submittedAt,
+      inviteToken: a.inviteToken,
       surveyUrl: `/survey/${a.inviteToken}`,
     })),
   });

@@ -1,0 +1,48 @@
+# Статический демо-сборка в ветку gh-pages (GitHub Pages → Settings → Pages → branch gh-pages / root).
+# NEXT_PUBLIC_BASE_PATH должен совпадать с именем репозитория для Project Pages: https://<user>.github.io/<repo>/
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Env and database
+        run: |
+          echo 'DATABASE_URL="file:./dev.db"' > .env
+          npx prisma db push
+          npm run db:seed
+
+      - name: Build static site
+        run: npm run build:gh-pages
+        env:
+          # Замените на имя репозитория, если не 360-feedback-app
+          NEXT_PUBLIC_BASE_PATH: /360-feedback-app
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          force_orphan: true

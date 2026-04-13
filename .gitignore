@@ -6,3 +6,4 @@ node_modules
 *.db-journal
 .DS_Store
 *.tsbuildinfo
+public/gh-pages-db.json

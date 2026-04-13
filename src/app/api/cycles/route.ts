@@ -13,6 +13,7 @@ function scopeLabelFromCycle(c: {
 }
 
 export async function GET() {
+  const headcount = await prisma.person.count();
   const cycles = await prisma.reviewCycle.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -29,14 +30,20 @@ export async function GET() {
       id: c.id,
       name: c.name,
       createdAt: c.createdAt,
+      startsAt: c.startsAt,
+      endsAt: c.endsAt,
+      semesterPeriodStartsAt: c.semesterPeriodStartsAt,
+      semesterPeriodEndsAt: c.semesterPeriodEndsAt,
       scopeType: c.scopeType,
       scopeLabel: scopeLabelFromCycle(c),
       revieweeCount: revieweeIds.length,
       completionRate: total ? Math.round((completed / total) * 100) : 0,
+      completed,
+      total,
     };
   });
 
-  return NextResponse.json({ cycles: payload });
+  return NextResponse.json({ cycles: payload, headcount });
 }
 
 type PostBody = {

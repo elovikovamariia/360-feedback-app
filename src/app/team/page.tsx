@@ -1,26 +1,39 @@
-import { cookies } from "next/headers";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
-import { getPreviewRoleFromCookies, resolveViewerPersonId } from "@/lib/demo-session";
-import { getManagerVisiblePersonIds } from "@/lib/org";
-import { prisma } from "@/lib/prisma";
+import { appFetch } from "@/lib/app-fetch";
+import type { PreviewRoleId } from "@/lib/roles";
 
-export default async function TeamPage() {
-  const cookieStore = cookies();
-  const role = getPreviewRoleFromCookies(cookieStore);
-  const viewerPersonId = await resolveViewerPersonId(cookieStore, role);
+type PersonRow = { id: string; name: string; title: string | null; email: string | null; managerId: string | null };
 
-  let where: { id: { in: string[] } } | Record<string, never> = {};
-  if (role === "manager" && viewerPersonId) {
-    const ids = await getManagerVisiblePersonIds(viewerPersonId);
-    where = { id: { in: ids } };
+export default function TeamPage() {
+  const [people, setPeople] = useState<PersonRow[] | false>(false);
+  const [role, setRole] = useState<PreviewRoleId>("hr_admin");
+
+  const load = useCallback(async () => {
+    const res = await appFetch("/api/team-directory");
+    if (!res.ok) {
+      setPeople([]);
+      return;
+    }
+    const j = (await res.json()) as { people: PersonRow[]; role: PreviewRoleId };
+    setPeople(j.people);
+    setRole(j.role);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (people === false) {
+    return (
+      <RoleGuard need="directory">
+        <div className="card p-10 text-center text-slate-600">Загрузка…</div>
+      </RoleGuard>
+    );
   }
-
-  const people = await prisma.person.findMany({
-    where: Object.keys(where).length ? where : undefined,
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, title: true, email: true, managerId: true },
-  });
 
   return (
     <RoleGuard need="directory">

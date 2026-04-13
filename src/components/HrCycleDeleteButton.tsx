@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { appFetch } from "@/lib/app-fetch";
 
 type Props = {
   cycleId: string;
@@ -9,9 +10,10 @@ type Props = {
   /** После удаления открыть этот путь (по умолчанию обновить текущую страницу) */
   redirectTo?: string;
   className?: string;
+  onDeleted?: () => void;
 };
 
-export function HrCycleDeleteButton({ cycleId, cycleName, redirectTo, className = "" }: Props) {
+export function HrCycleDeleteButton({ cycleId, cycleName, redirectTo, className = "", onDeleted }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -22,9 +24,10 @@ export function HrCycleDeleteButton({ cycleId, cycleName, redirectTo, className 
     if (!ok) return;
     setPending(true);
     try {
-      const res = await fetch(`/api/cycles/${cycleId}`, { method: "DELETE" });
+      const res = await appFetch(`/api/cycles/${cycleId}`, { method: "DELETE" });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Не удалось удалить");
+      onDeleted?.();
       if (redirectTo) {
         router.push(redirectTo);
       } else {

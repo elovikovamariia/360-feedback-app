@@ -53,6 +53,22 @@ npm run dev
 - **SQLite** на бессерверных платформах (например Vercel) **не подходит** для постоянного хранилища. Варианты: [Neon](https://neon.tech) / Supabase + смена `provider` в Prisma на `postgresql` и `DATABASE_URL`, либо PaaS с постоянным диском (Railway, Render).
 - Задайте переменные окружения на хостинге: `DATABASE_URL`, при необходимости `OPENAI_API_KEY`, `OPENAI_MODEL`.
 
+### GitHub Pages (статическое демо)
+
+На GitHub Pages отдаётся только статика: приложение собирается с `output: 'export'`, данные после `seed` выгружаются в `public/gh-pages-db.json`, а запросы к `/api/*` в браузере обрабатываются локально (тот же JSON + `localStorage` для изменений в сессии).
+
+1. В репозитории: **Settings → Pages → Build and deployment → Source**: ветка **`gh-pages`**, папка **`/` (root)**.
+2. В файле [`.github/workflows/deploy-github-pages.yml`](.github/workflows/deploy-github-pages.yml) выставьте **`NEXT_PUBLIC_BASE_PATH`** так же, как имя репозитория для Project Pages, например `/360-feedback-app` для URL `https://<user>.github.io/360-feedback-app/`.
+3. После пуша в `main` workflow выполнит `npm run build:gh-pages` и опубликует каталог `out/` в ветку `gh-pages`.
+
+Локальная проверка статической сборки (нужны локальные `.env` с `DATABASE_URL`, как в быстром старте):
+
+```bash
+npm run build:gh-pages
+```
+
+Откройте сгенерированный сайт через любой статический сервер с корнем в `out/` (или загрузите `out/` на хостинг).
+
 ## Сдача тестового задания
 
 - Ссылка на задеплоенное приложение и на репозиторий.

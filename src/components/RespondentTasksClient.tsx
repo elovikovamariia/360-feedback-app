@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { appFetch } from "@/lib/app-fetch";
 
 const REVIEWER_KEY = "360_feedback_reviewer_id";
 
@@ -120,8 +121,8 @@ export function RespondentTasksClient() {
     setLoading(true);
     try {
       const [mp, ma] = await Promise.all([
-        fetch("/api/my-assignments?status=pending").then((r) => r.json()),
-        fetch("/api/my-assignments?status=archive").then((r) => r.json()),
+        appFetch("/api/my-assignments?status=pending").then((r) => r.json()),
+        appFetch("/api/my-assignments?status=archive").then((r) => r.json()),
       ]);
       if (mp.error) throw new Error(mp.error);
       if (ma.error) throw new Error(ma.error);
@@ -146,8 +147,8 @@ export function RespondentTasksClient() {
         }
         if (ls) {
           const [p2, a2] = await Promise.all([
-            fetch(`/api/respondent?reviewerId=${encodeURIComponent(ls)}&status=pending`).then((r) => r.json()),
-            fetch(`/api/respondent?reviewerId=${encodeURIComponent(ls)}&status=archive`).then((r) => r.json()),
+            appFetch(`/api/respondent?reviewerId=${encodeURIComponent(ls)}&status=pending`).then((r) => r.json()),
+            appFetch(`/api/respondent?reviewerId=${encodeURIComponent(ls)}&status=archive`).then((r) => r.json()),
           ]);
           if (!p2.error && p2.items?.length) pend = p2.items;
           if (!a2.error && a2.items?.length) arch = a2.items;

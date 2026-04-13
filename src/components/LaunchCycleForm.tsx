@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { appFetch } from "@/lib/app-fetch";
 import {
   buildSemesterOptions,
   defaultPeriodForSemester,
@@ -11,9 +12,9 @@ import {
 } from "@/lib/cycle-semester";
 import { maxISODate, todayLocalISODate } from "@/lib/date-only";
 
-type Props = { existingCycleNames: string[] };
+type Props = { existingCycleNames: string[]; onCreated?: () => void };
 
-export function LaunchCycleForm({ existingCycleNames }: Props) {
+export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
   const router = useRouter();
   const todayStr = useMemo(() => todayLocalISODate(), []);
 
@@ -79,7 +80,7 @@ export function LaunchCycleForm({ existingCycleNames }: Props) {
     }
     setLoading(true);
     try {
-      const res = await fetch("/api/cycles", {
+      const res = await appFetch("/api/cycles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,6 +93,7 @@ export function LaunchCycleForm({ existingCycleNames }: Props) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Ошибка");
+      onCreated?.();
       router.push(`/hr/cycles/${json.id}`);
       router.refresh();
     } catch (e) {

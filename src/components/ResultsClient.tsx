@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { appFetch } from "@/lib/app-fetch";
 import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { useRolePreview } from "@/components/RolePreviewProvider";
 import { ChartTabs } from "@/components/charts/ChartTabs";
@@ -69,7 +70,7 @@ export function ResultsClient({ revieweeId, cycleId }: { revieweeId: string; cyc
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/reviewees/${revieweeId}/summary?${qs.toString()}`);
+        const res = await appFetch(`/api/reviewees/${revieweeId}/summary?${qs.toString()}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Ошибка загрузки");
         if (!cancelled) setSummary(json);
@@ -85,7 +86,7 @@ export function ResultsClient({ revieweeId, cycleId }: { revieweeId: string; cyc
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await fetch(`/api/reviewees/${revieweeId}/ai?${qs.toString()}`);
+      const res = await appFetch(`/api/reviewees/${revieweeId}/ai?${qs.toString()}`);
       const json = await res.json();
       if (!cancelled && json.report) {
         setAi(json.report);
@@ -101,7 +102,7 @@ export function ResultsClient({ revieweeId, cycleId }: { revieweeId: string; cyc
     setLoadingAi(true);
     setError(null);
     try {
-      const res = await fetch(`/api/reviewees/${revieweeId}/ai?${qs.toString()}`, { method: "POST" });
+      const res = await appFetch(`/api/reviewees/${revieweeId}/ai?${qs.toString()}`, { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Ошибка AI");
       setAi(json.report);

@@ -1,12 +1,31 @@
+"use client";
+
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { useCallback, useEffect, useState } from "react";
 import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
-import { getPreviewRoleFromCookies, resolveViewerPersonId } from "@/lib/demo-session";
-import { getManagerCycleCoverage } from "@/lib/manager-coverage";
-import { getManagerVisiblePersonIds } from "@/lib/org";
-import { prisma } from "@/lib/prisma";
+import { appFetch } from "@/lib/app-fetch";
 import type { PreviewRoleId } from "@/lib/roles";
+
+type ReportsDashboardPayload = {
+  role: PreviewRoleId;
+  items: {
+    id: string;
+    name: string;
+    scopeLabel: string;
+    revieweeCount: number;
+    completionRate: number;
+    firstRevieweeId: string | undefined;
+  }[];
+  avg: number;
+  latestCycleId: string | null;
+  coverage: {
+    revieweeId: string;
+    revieweeName: string;
+    selfSubmitted: boolean;
+    pendingAssignments: { id: string; reviewerName: string; relationship: string }[];
+  }[] | null;
+};
 
 function relLabel(r: string) {
   switch (r) {
@@ -23,67 +42,47 @@ function relLabel(r: string) {
   }
 }
 
-export default async function ReportsPage() {
-  const cookieStore = cookies();
-  const role = getPreviewRoleFromCookies(cookieStore);
-  const viewerPersonId = await resolveViewerPersonId(cookieStore, role);
+function heroDescription(role: PreviewRoleId) {
+  if (role === "manager") {
+    return "Статус заполнения по циклам в границах вашей команды и переход к радару по сотруднику. Сырые комментарии к вам не показываются — есть AI-сводка на странице результатов.";
+  }
+  if (role === "executive") {
+    return "Сводные показатели по циклам без детальной HR-панели: удобно показать обзор для руководства.";
+  }
+  return "Для демо HR: по каждому циклу видно долю заполненных анкет. Откройте сотрудника — радар по компетенциям и сравнение самооценки с оценками руководителя и коллег.";
+}
 
-  let allowedRevieweeIds: Set<string> | null = null;
-  if (role === "manager" && viewerPersonId) {
-    allowedRevieweeIds = new Set(await getManagerVisiblePersonIds(viewerPersonId));
+export default function ReportsPage() {
+  const [data, setData] = useState<ReportsDashboardPayload | false>(false);
+
+  const load = useCallback(async () => {
+    const res = await appFetch("/api/reports-dashboard");
+    if (!res.ok) {
+      setData({ role: "hr_admin", items: [], avg: 0, latestCycleId: null, coverage: null });
+      return;
+    }
+    setData((await res.json()) as ReportsDashboardPayload);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (data === false) {
+    return (
+      <RoleGuard need="reports">
+        <div className="card p-10 text-center text-slate-600">Загрузка…</div>
+      </RoleGuard>
+    );
   }
 
-  const cycles = await prisma.reviewCycle.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      assignments: { select: { revieweeId: true, submittedAt: true } },
-      scopedDirections: { include: { direction: { select: { num: true } } } },
-    },
-  });
-
-  const items = cycles.map((c) => {
-    const ass = allowedRevieweeIds
-      ? c.assignments.filter((a) => allowedRevieweeIds!.has(a.revieweeId))
-      : c.assignments;
-    const revieweeIds = [...new Set(ass.map((a) => a.revieweeId))].sort();
-    const done = ass.filter((a) => a.submittedAt).length;
-    const total = ass.length;
-    const firstReviewee = revieweeIds[0];
-    const scopeLabel =
-      c.scopeType !== "DIRECTIONS" || c.scopedDirections.length === 0
-        ? "Вся компания"
-        : `Напр.: ${c.scopedDirections
-            .map((s) => s.direction.num)
-            .sort((a, b) => a - b)
-            .join(", ")}`;
-    return {
-      id: c.id,
-      name: c.name,
-      scopeLabel,
-      revieweeCount: revieweeIds.length,
-      completionRate: total ? Math.round((done / total) * 100) : 0,
-      firstRevieweeId: firstReviewee,
-    };
-  });
-
-  const avg =
-    items.length === 0 ? 0 : Math.round(items.reduce((a, c) => a + c.completionRate, 0) / items.length);
-
-  const latestCycleId = cycles[0]?.id ?? null;
-  let coverage: Awaited<ReturnType<typeof getManagerCycleCoverage>> | null = null;
-  if (role === "manager" && viewerPersonId && latestCycleId) {
-    coverage = await getManagerCycleCoverage(latestCycleId, viewerPersonId);
-  }
+  const { role, items, avg, latestCycleId, coverage } = data;
 
   return (
     <RoleGuard need="reports">
       <div className="space-y-10">
         <Breadcrumbs items={[{ href: "/", label: "Главная" }, { label: "Отчёты" }]} />
-        <PageHero
-          kicker="UC-4 и UC-6"
-          title="Отчёты по циклам"
-          description={heroDescription(role)}
-        >
+        <PageHero kicker="UC-4 и UC-6" title="Отчёты по циклам" description={heroDescription(role)}>
           {items.length > 0 ? (
             <>
               <StatPill label="Циклов" value={items.length} />
@@ -214,14 +213,4 @@ export default async function ReportsPage() {
       </div>
     </RoleGuard>
   );
-}
-
-function heroDescription(role: PreviewRoleId) {
-  if (role === "manager") {
-    return "Статус заполнения по циклам в границах вашей команды и переход к радару по сотруднику. Сырые комментарии к вам не показываются — есть AI-сводка на странице результатов.";
-  }
-  if (role === "executive") {
-    return "Сводные показатели по циклам без детальной HR-панели: удобно показать обзор для руководства.";
-  }
-  return "Для демо HR: по каждому циклу видно долю заполненных анкет. Откройте сотрудника — радар по компетенциям и сравнение самооценки с оценками руководителя и коллег.";
 }

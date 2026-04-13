@@ -9,7 +9,9 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:export-snapshot": "tsx scripts/gh-pages-snapshot.ts",
+    "build:gh-pages": "prisma generate && prisma db push && npm run db:seed && npm run db:export-snapshot && node scripts/stash-api.mjs stash && node scripts/run-gh-pages-build.mjs && node scripts/stash-api.mjs restore"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
