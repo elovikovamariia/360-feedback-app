@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model OrgDirection {
+  id    String @id @default(cuid())
+  num   Int    @unique
+  name  String
+
+  departments    OrgDepartment[]
+  cycleScopes    ReviewCycleDirection[]
+}
+
+model OrgDepartment {
+  id          String @id @default(cuid())
+  directionId String
+  name        String
+
+  direction     OrgDirection     @relation(fields: [directionId], references: [id], onDelete: Cascade)
+  subdivisions OrgSubdivision[]
+}
+
+model OrgSubdivision {
+  id           String @id @default(cuid())
+  departmentId String
+  name         String
+
+  department OrgDepartment @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  groups     OrgGroup[]
+}
+
+model OrgGroup {
+  id             String @id @default(cuid())
+  subdivisionId String
+  name           String
+
+  subdivision OrgSubdivision @relation(fields: [subdivisionId], references: [id], onDelete: Cascade)
+  people      Person[]
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  title     String?
+  managerId String?
+  orgGroupId String?
+  createdAt DateTime @default(now())
+
+  orgGroup              OrgGroup?          @relation(fields: [orgGroupId], references: [id], onDelete: SetNull)
+  manager               Person?            @relation("OrgHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports         Person[]         @relation("OrgHierarchy")
+  assignmentsAsReviewer ReviewAssignment[] @relation("Reviewer")
+  assignmentsAsReviewee ReviewAssignment[] @relation("Reviewee")
+}
+
+model ReviewCycle {
+  id        String   @id @default(cuid())
+  name      String
+  // Сбор оценок 360 (анкеты)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  // Календарные границы выбранного полугодия
+  semesterPeriodStartsAt DateTime?
+  semesterPeriodEndsAt   DateTime?
+  scopeType String   @default("COMPANY") // COMPANY | DIRECTIONS (см. scopedDirections)
+  createdAt DateTime @default(now())
+
+  assignments       ReviewAssignment[]
+  aiReports         AiReport[]
+  scopedDirections  ReviewCycleDirection[]
+}
+
+model ReviewCycleDirection {
+  cycleId     String
+  directionId String
+
+  cycle     ReviewCycle   @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  direction OrgDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
+
+  @@id([cycleId, directionId])
+}
+
+model ReviewAssignment {
+  id             String               @id @default(cuid())
+  cycleId        String
+  revieweeId     String
+  reviewerId     String
+  relationship   String
+  inviteToken    String               @unique
+  submittedAt    DateTime?
+  createdAt      DateTime             @default(now())
+
+  cycle    ReviewCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  reviewee Person      @relation("Reviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reviewer Person      @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  ratings RatingAnswer[]
+  texts   TextAnswer[]
+}
+
+model Competency {
+  id          String @id @default(cuid())
+  key         String @unique
+  title       String
+  description String
+  sortOrder   Int    @default(0)
+
+  ratings RatingAnswer[]
+}
+
+model RatingAnswer {
+  id             String  @id @default(cuid())
+  assignmentId String
+  competencyId String
+  score   Int
+  comment String? // необязательный комментарий к оценке по компетенции
+
+  assignment ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  competency Competency       @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, competencyId])
+}
+
+model TextAnswer {
+  id           String @id @default(cuid())
+  assignmentId String
+  body         String
+
+  assignment ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+}
+
+model AiReport {
+  id         String   @id @default(cuid())
+  cycleId    String
+  revieweeId String
+  payload    String
+  model      String?
+  createdAt  DateTime @default(now())
+
+  cycle ReviewCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, revieweeId])
+}
