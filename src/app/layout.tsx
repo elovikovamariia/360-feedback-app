@@ -1,15 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { AppHeader } from "@/components/AppHeader";
 import { PreviewRoleBanner } from "@/components/PreviewRoleBanner";
 import { RolePreviewProvider } from "@/components/RolePreviewProvider";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "360° Feedback — оценка сотрудников",
@@ -25,10 +18,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={inter.variable}>
-      <body
-        className={`${inter.className} flex min-h-screen flex-col touch-manipulation antialiased overflow-x-hidden`}
-      >
+    <html lang="ru">
+      <body className="font-sans flex min-h-screen flex-col touch-manipulation antialiased overflow-x-hidden">
         <RolePreviewProvider>
           <AppHeader />
           <PreviewRoleBanner />

@@ -23,6 +23,8 @@
 
 После пуша в ветку **`main`** workflow [.github/workflows/deploy-github-pages.yml](../.github/workflows/deploy-github-pages.yml) выполняет `db:seed`, экспорт снапшота и сборку статики в `out/`, затем публикует в **`gh-pages`**.
 
+Если публичный URL не меняется после пуша, откройте вкладку **Actions** репозитория: при ошибке шага «Build static site» ветка `gh-pages` не обновляется (остаётся прежняя версия сайта).
+
 Убедитесь, что в workflow значение **`NEXT_PUBLIC_BASE_PATH`** совпадает с именем репозитория (например `/360-feedback-app`).
 
 Локальная проверка перед пушем:
