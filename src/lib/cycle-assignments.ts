@@ -28,7 +28,7 @@ export async function bulkCreateStructuredAssignments(
 
   const people = await db.person.findMany({
     where,
-    select: { id: true, orgGroupId: true, managerId: true },
+    select: { id: true, orgGroupId: true, managerId: true, name: true },
   });
 
   const byGroup = new Map<string, string[]>();
@@ -66,8 +66,11 @@ export async function bulkCreateStructuredAssignments(
 
     const withoutManager = p.managerId ? others.filter((id) => id !== p.managerId) : others;
     const peerPool = withoutManager.length > 0 ? withoutManager : others.filter((id) => id !== p.id);
-    const sortedPeers = [...peerPool].sort();
-    const peerId = sortedPeers[0];
+    const peerCandidates = peerPool
+      .map((id) => people.find((x) => x.id === id))
+      .filter((x): x is NonNullable<typeof people[number]> => Boolean(x))
+      .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    const peerId = peerCandidates[0]?.id;
     if (!peerId || peerId === p.managerId) continue;
 
     rows.push({

@@ -24,11 +24,18 @@ export function CompetencyBarCompare({ data, className }: Props) {
   }));
 
   return (
-    <div className={`h-[min(380px,55vh)] w-full min-h-[280px] ${className ?? ""}`}>
+    <div className={`h-[min(360px,52vh)] w-full min-h-[240px] min-w-0 sm:h-[min(380px,55vh)] sm:min-h-[280px] ${className ?? ""}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 8, right: 8, left: -8, bottom: 56 }}>
+        <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 64 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748b" }} interval={0} angle={-22} textAnchor="end" height={70} />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 9, fill: "#64748b" }}
+            interval={0}
+            angle={-35}
+            textAnchor="end"
+            height={76}
+          />
           <YAxis domain={[0, 5]} tickCount={6} tick={{ fontSize: 11, fill: "#94a3b8" }} width={28} />
           <Tooltip
             contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 8px 30px rgba(15,23,42,0.08)" }}

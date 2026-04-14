@@ -29,18 +29,19 @@ export async function loadCycleSummary(
 
   for (const a of assignments) {
     const role = relationshipToKey(a.relationship);
+    const roleTag = relationshipToBundleTag(a.relationship);
     for (const r of a.ratings) {
       if (!averages[role][r.competencyId]) averages[role][r.competencyId] = { sum: 0, count: 0 };
       averages[role][r.competencyId]!.sum += r.score;
       averages[role][r.competencyId]!.count += 1;
     }
     if (includeVerbatim) {
-      for (const t of a.texts) texts.push(t.body);
+      for (const t of a.texts) texts.push(`${roleTag}${t.body}`);
       for (const r of a.ratings) {
         if (r.comment && r.comment.trim()) {
           const comp = competencies.find((c) => c.id === r.competencyId);
           const title = comp?.title ?? "компетенция";
-          texts.push(`По «${title}»: ${r.comment.trim()}`);
+          texts.push(`${roleTag}По «${title}»: ${r.comment.trim()}`);
         }
       }
     }
@@ -86,6 +87,22 @@ function relationshipToKey(r: string): keyof RoleAverages {
       return "SUBORDINATE";
     default:
       return "PEER";
+  }
+}
+
+/** Префикс для обезличенного пакета текстов к ИИ (без имён респондентов). */
+function relationshipToBundleTag(r: string): string {
+  switch (r) {
+    case "SELF":
+      return "[Самооценка] ";
+    case "MANAGER":
+      return "[Руководитель] ";
+    case "PEER":
+      return "[Коллега] ";
+    case "SUBORDINATE":
+      return "[Подчинённый] ";
+    default:
+      return "[Респондент] ";
   }
 }
 

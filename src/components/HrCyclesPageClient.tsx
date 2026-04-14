@@ -100,13 +100,13 @@ export function HrCyclesPageClient() {
   return (
     <RoleGuard need="hr_cycles">
       <div className="space-y-10">
-        <Breadcrumbs items={[{ href: "/", label: "Главная" }, { label: "Циклы 360°" }]} />
+        <Breadcrumbs items={[{ href: "/", label: "Главная" }, { label: "Оценка 360" }]} />
         <PageHero
-          kicker="HR · UC-1 и UC-4"
-          title="Циклы оценки 360°"
+          kicker="HR · Оценка 360"
+          title="Оценка 360"
           description="Цикл только на всю компанию. При запуске задаются даты сбора оценок; для каждого из сотрудников автоматически создаются анкеты: самооценка, руководитель из оргструктуры и один коллега из прямой команды. Ссылки и статус — в карточке цикла и в отчётах."
         >
-          <StatPill label="Сотрудников (демо)" value={hc} />
+          <StatPill label="Сотрудников в справочнике" value={hc} />
           {cycles.length > 0 ? (
             <>
               <StatPill label="Циклов в ленте" value={cycles.length} />
@@ -117,11 +117,15 @@ export function HrCyclesPageClient() {
         </PageHero>
 
         <div className="rounded-2xl border border-slate-200/90 bg-slate-50/60 px-4 py-4 text-sm text-slate-700 sm:px-5">
-          <p className="font-semibold text-slate-900">В этом разделе для демо</p>
+          <p className="font-semibold text-slate-900">Возможности раздела</p>
           <ul className="mt-2 list-inside list-disc space-y-1.5 leading-relaxed text-slate-600">
             <li>Создать цикл: период полугодия подставляется из выбора; даты сбора 360° (начало не раньше сегодня), название по полугодию.</li>
             <li>Сразу после запуска — автоматические назначения по оргструктуре (сам, руководитель, один коллега из команды) и ссылки на анкеты.</li>
-            <li>Смотреть прогресс в карточке цикла и в отчётах; при необходимости удалить тестовый цикл целиком.</li>
+            <li>Смотреть прогресс в карточке цикла и в отчётах; при необходимости удалить цикл целиком.</li>
+            <li>
+              Полный walkthrough для проверки ролей и ИИ: файл{" "}
+              <code className="rounded bg-white/80 px-1.5 py-0.5 font-mono text-[11px]">docs/TEST_SCENARIO_360.md</code>.
+            </li>
           </ul>
         </div>
 
@@ -135,10 +139,7 @@ export function HrCyclesPageClient() {
             <div className="card border-amber-200/80 bg-gradient-to-br from-amber-50 to-orange-50/50 p-8">
               <h3 className="text-lg font-semibold text-amber-950">Данных пока нет</h3>
               <p className="mt-2 text-sm leading-relaxed text-amber-900/90">
-                Выполните в папке проекта:{" "}
-                <code className="rounded-md bg-white/80 px-2 py-0.5 font-mono text-xs shadow-sm">npx prisma db push</code>{" "}
-                и <code className="rounded-md bg-white/80 px-2 py-0.5 font-mono text-xs shadow-sm">npm run db:seed</code>,
-                затем обновите страницу.
+                Проверьте подключение к базе данных и наличие циклов оценки, либо создайте новый цикл формой ниже.
               </p>
             </div>
           ) : (

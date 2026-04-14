@@ -44,7 +44,7 @@ export function RoleSwitcher({ variant = "desktop" }: { variant?: "desktop" | "d
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-[14rem] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:max-w-xs sm:text-sm"
+        className="flex min-h-[var(--touch-min,44px)] max-w-[14rem] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-xs shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:max-w-xs sm:text-sm"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -53,7 +53,7 @@ export function RoleSwitcher({ variant = "desktop" }: { variant?: "desktop" | "d
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold text-slate-900">{meta.shortLabel}</span>
-          <span className="block truncate text-[11px] text-slate-500">Роль для демо</span>
+          <span className="block truncate text-[11px] text-slate-500">Роль предпросмотра</span>
         </span>
         <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -64,7 +64,7 @@ export function RoleSwitcher({ variant = "desktop" }: { variant?: "desktop" | "d
           className="absolute right-0 top-full z-[60] mt-2 w-[min(100vw-2rem,22rem)] rounded-2xl border border-slate-200 bg-white py-2 shadow-xl ring-1 ring-slate-900/5"
           role="listbox"
         >
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Роль (тестовое демо)</p>
+          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Роль</p>
           {PREVIEW_ROLES.map((r) => (
             <button
               key={r.id}

@@ -43,12 +43,12 @@ export function AppHeader() {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 shadow-soft backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 pt-[env(safe-area-inset-top,0px)] shadow-soft backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-brand-400/25 to-transparent"
         aria-hidden
       />
-      <div className="mx-auto flex h-[3.25rem] max-w-7xl items-center justify-between gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6">
+      <div className="mx-auto flex min-h-[3.25rem] max-w-7xl items-center justify-between gap-2 px-[max(1rem,env(safe-area-inset-left,0px))] sm:h-16 sm:gap-3 sm:px-6 sm:pr-[max(1.5rem,env(safe-area-inset-right,0px))]">
         <Link
           href="/"
           className="group flex min-w-0 shrink items-center gap-2.5 rounded-xl py-1.5 pr-1 outline-none ring-brand-500/40 focus-visible:ring-2 sm:pr-2"
@@ -60,7 +60,7 @@ export function AppHeader() {
             <span className="max-w-[10rem] truncate text-sm font-semibold tracking-tightish text-slate-900 sm:max-w-none sm:text-[0.95rem]">
               Feedback Studio
             </span>
-            <span className="hidden text-[11px] font-medium text-slate-500 sm:block">демо 360° · тестовое задание</span>
+            <span className="hidden text-[11px] font-medium text-slate-500 sm:block">оценка 360° · Feedback Studio</span>
           </span>
         </Link>
 
@@ -123,15 +123,15 @@ export function AppHeader() {
             onClick={() => setMenuOpen(false)}
           />
           <nav
-            className="absolute right-0 top-0 flex h-full w-[min(100%,20rem)] flex-col border-l border-slate-200 bg-white p-4 pt-16 shadow-2xl"
+            className="absolute right-0 top-0 flex h-full w-[min(100%,20rem)] flex-col border-l border-slate-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-16 shadow-2xl"
             aria-label="Мобильное меню"
           >
-            <div className="flex-1 space-y-1 overflow-y-auto">
+            <div className="flex-1 space-y-1 overflow-y-auto overscroll-y-contain">
               {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`block rounded-xl px-4 py-3.5 text-base font-semibold transition ${
+                  className={`block min-h-[var(--touch-min,44px)] rounded-xl px-4 py-3.5 text-base font-semibold leading-snug transition ${
                     isActive(pathname, item.href) ? "bg-brand-50 text-brand-900 ring-1 ring-brand-100" : "text-slate-800 hover:bg-slate-50"
                   }`}
                 >

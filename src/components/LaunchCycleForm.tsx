@@ -10,7 +10,7 @@ import {
   parseSemesterKey,
   pickDefaultSemesterKey,
 } from "@/lib/cycle-semester";
-import { maxISODate, todayLocalISODate } from "@/lib/date-only";
+import { isoToRuDots, maxISODate, todayLocalISODate } from "@/lib/date-only";
 
 type Props = { existingCycleNames: string[]; onCreated?: () => void };
 
@@ -30,7 +30,7 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
   );
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [collectionStart, setCollectionStart] = useState("");
+  const [collectionStart, setCollectionStart] = useState(todayStr);
   const [collectionEnd, setCollectionEnd] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -43,12 +43,13 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
     setPeriodEnd(pe);
     const t = todayLocalISODate();
     setCollectionStart(t);
-    setCollectionEnd(maxISODate(pe, t));
+    setCollectionEnd("");
   }, [semesterKey]);
 
   const parsed = parseSemesterKey(semesterKey);
   const name = parsed ? formatCycleNameFromSemester(parsed.year, parsed.half) : "";
   const nameTaken = existingCycleNames.some((n) => n.trim() === name);
+
   const collectionEndMin = maxISODate(todayStr, collectionStart || todayStr);
 
   async function onSubmit(e: React.FormEvent) {
@@ -67,11 +68,15 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
       return;
     }
     if (!collectionStart || !collectionEnd) {
-      setErr("Укажите даты сбора оценок");
+      setErr("Укажите даты начала и окончания сбора оценок");
       return;
     }
     if (collectionStart < todayStr) {
       setErr("Дата начала сбора не может быть раньше сегодняшнего дня");
+      return;
+    }
+    if (collectionEnd < todayStr) {
+      setErr("Дата окончания сбора не может быть раньше сегодняшнего дня");
       return;
     }
     if (collectionEnd < collectionStart) {
@@ -108,9 +113,10 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
       <div className="border-b border-slate-100 bg-gradient-to-r from-brand-50/80 to-white px-6 py-4 sm:px-7">
         <h2 className="text-lg font-semibold text-slate-900">Запустить новый цикл</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Полугодие задаёт календарный период (I или II полугодие года) и название цикла. Сбор оценок 360° — отдельные
-          даты: по умолчанию начало сбора — сегодня, прошедшие даты выбрать нельзя. После создания система создаст
-          анкеты: самооценка, руководитель и один коллега из команды.
+          Полугодие задаёт календарный период (I или II полугодие года) и название цикла. Границы периода подставляются
+          автоматически (ДД.ММ.ГГГГ). Сбор оценок 360° — отдельные даты: начало сбора по умолчанию — сегодня, дату
+          окончания выберите в календаре; прошедшие даты недоступны. После создания система создаст анкеты: самооценка,
+          руководитель и один коллега из команды.
         </p>
       </div>
       <form onSubmit={onSubmit} className="space-y-5 p-6 sm:p-7">
@@ -149,13 +155,13 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
             <div>
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Начало периода</span>
               <p className="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800">
-                {periodStart || "—"}
+                {periodStart ? isoToRuDots(periodStart) : "—"}
               </p>
             </div>
             <div>
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Окончание периода</span>
               <p className="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800">
-                {periodEnd || "—"}
+                {periodEnd ? isoToRuDots(periodEnd) : "—"}
               </p>
             </div>
           </div>
@@ -165,6 +171,9 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
           <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-brand-800">
             Сбор оценок 360°
           </legend>
+          <p className="mt-2 text-sm text-slate-600">
+            Выберите даты встроенным календарём браузера. Рядом — тот же день в формате ДД.ММ.ГГГГ для сверки.
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="collection-start" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -172,18 +181,26 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
               </label>
               <input
                 id="collection-start"
-                className="input-text mt-1.5 w-full"
+                className="input-text mt-1.5 min-h-[44px] w-full"
                 type="date"
                 value={collectionStart}
                 min={todayStr}
+                required
                 onChange={(e) => {
                   const v = e.target.value;
+                  if (!v) {
+                    setCollectionStart(todayStr);
+                    setCollectionEnd((prev) => (prev ? maxISODate(prev, todayStr) : ""));
+                    return;
+                  }
                   const s = v < todayStr ? todayStr : v;
                   setCollectionStart(s);
-                  setCollectionEnd((prev) => maxISODate(prev, s));
+                  setCollectionEnd((prev) => (prev ? maxISODate(prev, s) : ""));
                 }}
-                required
               />
+              {collectionStart ? (
+                <p className="mt-1.5 text-xs text-slate-500">ДД.ММ.ГГГГ: {isoToRuDots(collectionStart)}</p>
+              ) : null}
             </div>
             <div>
               <label htmlFor="collection-end" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -191,17 +208,25 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
               </label>
               <input
                 id="collection-end"
-                className="input-text mt-1.5 w-full"
+                className="input-text mt-1.5 min-h-[44px] w-full"
                 type="date"
                 value={collectionEnd}
                 min={collectionEndMin}
                 onChange={(e) => {
                   const v = e.target.value;
+                  if (!v) {
+                    setCollectionEnd("");
+                    return;
+                  }
                   if (v < collectionEndMin) setCollectionEnd(collectionEndMin);
                   else setCollectionEnd(v);
                 }}
-                required
               />
+              {collectionEnd ? (
+                <p className="mt-1.5 text-xs text-slate-500">ДД.ММ.ГГГГ: {isoToRuDots(collectionEnd)}</p>
+              ) : (
+                <p className="mt-1.5 text-xs text-slate-500">По умолчанию пусто — выберите дату окончания сбора.</p>
+              )}
             </div>
           </div>
         </fieldset>
@@ -210,7 +235,7 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
 
         <button
           type="submit"
-          disabled={loading || nameTaken || !name || !collectionStart || !collectionEnd || !periodStart || !periodEnd}
+          disabled={loading || nameTaken || !name || !periodStart || !periodEnd}
           className="btn-primary min-h-[44px] px-8"
         >
           {loading ? "Создание…" : "Создать цикл"}

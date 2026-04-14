@@ -1,5 +1,5 @@
 /**
- * Экспорт содержимого SQLite (Prisma) в public/gh-pages-db.json для статического демо на GitHub Pages.
+ * Экспорт содержимого SQLite (Prisma) в public/gh-pages-db.json для статической сборки на GitHub Pages.
  * Запуск: npm run db:export-snapshot (после db push + seed).
  */
 import { mkdirSync, writeFileSync } from "node:fs";

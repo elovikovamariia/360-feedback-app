@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** Список анкет респондента: активные (не отправлены) или архив (отправлены). Демо: без авторизации, по reviewerId из браузера. */
+/** Список анкет респондента: активные (не отправлены) или архив (отправлены). В режиме предпросмотра — по reviewerId из сессии браузера. */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const reviewerId = searchParams.get("reviewerId");

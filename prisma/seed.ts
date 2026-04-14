@@ -1,115 +1,274 @@
 import { PrismaClient } from "@prisma/client";
-import { randomBytes } from "crypto";
+import { DEMO_PERSON_EMAIL } from "../src/lib/demo-personas";
 import { bulkCreateStructuredAssignments } from "../src/lib/cycle-assignments";
+import { runHrAiAgentReport } from "../src/lib/hr-ai-agent";
+import { loadAiBenchmarkBundle } from "../src/lib/report-benchmarks";
+import { loadCycleSummary } from "../src/lib/summary";
 
 const prisma = new PrismaClient();
 
-function t() {
-  return randomBytes(24).toString("hex");
-}
-
+/** Компетенции по модели «Концепция 360°» (названия как в документе; ключи стабильны для данных). */
 const competencies = [
-  { key: "patient_first", title: "Patient first", description: "Клиент и ценность результата в решениях", sortOrder: 1 },
-  { key: "play_to_win", title: "Play to win", description: "Ответственность и доведение до результата", sortOrder: 2 },
-  { key: "unite_efforts", title: "Unite efforts", description: "Обмен информацией и конструктивное взаимодействие", sortOrder: 3 },
-  { key: "embrace_change", title: "Embrace change", description: "Адаптивность и улучшения", sortOrder: 4 },
-  { key: "less_is_more", title: "Less is more", description: "Фокус на приоритетах и упрощение", sortOrder: 5 },
+  {
+    key: "patient_first",
+    title: "Patient first",
+    description:
+      "Учитывает потребности клиента при принятии решений. Проверяет, какую ценность создаёт результат.",
+    sortOrder: 1,
+  },
+  {
+    key: "play_to_win",
+    title: "Play to win",
+    description: "Берёт ответственность за результат. Доводит задачи до конца.",
+    sortOrder: 2,
+  },
+  {
+    key: "unite_efforts",
+    title: "Unite efforts",
+    description: "Делится информацией. Конструктивно взаимодействует.",
+    sortOrder: 3,
+  },
+  {
+    key: "embrace_change",
+    title: "Embrace change",
+    description: "Быстро адаптируется. Предлагает улучшения.",
+    sortOrder: 4,
+  },
+  {
+    key: "less_is_more",
+    title: "Less is more",
+    description: "Упрощает процессы. Фокусируется на приоритетах.",
+    sortOrder: 5,
+  },
 ];
 
-const demoTexts: Partial<Record<string, string>> = {
-  SELF:
-    "Считаю, что хорошо выстраиваю коммуникацию и довожу задачи до результата. Хочу сильнее делегировать рутину.",
-  MANAGER:
-    "Сильная сторона — клиентоориентированность. Зона роста — приоритизация при перегрузе; иногда берёт слишком много параллельных задач.",
-  PEER: "Конструктивно помогает в блокерах. Иногда не успевает на ревью в срок из-за приоритетов.",
+type AssignmentRow = {
+  id: string;
+  relationship: string;
+  reviewee: { name: string };
+  reviewer: { name: string };
 };
 
-function scoreFor(rel: string, idx: number, boost: number) {
-  const base = rel === "SELF" ? 4 : rel === "MANAGER" ? 3 : rel === "PEER" ? 3 : 4;
-  return Math.min(5, Math.max(1, base + ((idx % 3) - 1) + boost));
+function scoreSet(rel: string, variant: number): number[] {
+  const bases: Record<string, number[]> = {
+    SELF: [4, 4, 3, 4, 4],
+    MANAGER: [4, 3, 4, 3, 4],
+    PEER: [4, 4, 4, 3, 3],
+    SUBORDINATE: [5, 4, 4, 4, 4],
+  };
+  const base = bases[rel] ?? [4, 4, 4, 4, 4];
+  const bump = variant % 3;
+  return base.map((s, i) => Math.min(5, Math.max(2, s + ((i + bump) % 2) - (variant % 2))));
 }
 
-async function submitAssignment(
-  assignmentId: string,
-  relationship: string,
+function competencyCommentsFor(
+  rel: string,
+  revieweeFirst: string,
+  reviewerFirst: string,
+  v: number,
+): string[] {
+  const idx = v % 4;
+  if (rel === "SELF") {
+    return [
+      `Считаю сильной стороной доведение задач до результата; иногда беру на себя слишком много параллельных инициатив.`,
+      `В коммуникации стараюсь быть прозрачной по срокам; хочу раньше эскалировать риски.`,
+      `Смотрю на квартальные цели; в операционке хочу сильнее держать фокус на приоритетах и не распыляться.`,
+      `Коллегам помогаю, когда просят; баланс «свои задачи / помощь» — зона внимания.`,
+      `Под давлением дедлайнов сохраняю работоспособность; отдых планирую не всегда системно.`,
+    ];
+  }
+  if (rel === "MANAGER") {
+    const lines = [
+      `Видит картину целиком; просит уточнений по приоритетам — это помогает команде.`,
+      `На ${revieweeFirst} можно опереться в переговорах со смежными командами.`,
+      `Иногда ожидания по срокам звучат оптимистичнее, чем реальность загрузки — стоит синхронизировать буферы.`,
+      `Хорошо даёт развивающую обратную связь 1:1.`,
+      `В изменениях процессов держит команду в курсе; хочется чуть больше предсказуемости по критериям успеха.`,
+    ];
+    return lines.map((_, i) => lines[(i + idx) % lines.length]!);
+  }
+  if (rel === "PEER") {
+    const lines = [
+      `${reviewerFirst} отмечает: в парных задачах с ${revieweeFirst} удобно синхронизироваться, ответы по сути и в срок.`,
+      `На ревью аргументирует позицию данными, а не «мнением» — ускоряет решения.`,
+      `В стрессовых релизах иногда резковато в чате; на результат это не влияет, но климат можно смягчить.`,
+      `Готова подхватить блокер коллеги, иногда за счёт своих слотов — команда ценит, но есть риск перегруза.`,
+      `Быстро вникает в новую предметную область; документацию дополняет примерами.`,
+    ];
+    return lines.map((_, i) => lines[(i + idx + 1) % lines.length]!);
+  }
+  return [
+    `Как руководителю ${revieweeFirst} удаётся держать фокус команды на метриках.`,
+    `Запрашивает обратную связь у команды — редкая и ценная практика.`,
+    `Иногда много параллельных тем на статусе; короче повестка помогла бы всем.`,
+    `Поддерживает инициативы сотрудников, но границы ответственности можно прояснять чаще.`,
+    `В конфликтных ситуациях выносит обсуждение в живой разговор, а не в переписку.`,
+  ];
+}
+
+function generalTextFor(row: AssignmentRow, variant: number): string {
+  const r = row.relationship;
+  const who = row.reviewee.name.split(" ")[0] ?? row.reviewee.name;
+  if (r === "SELF") {
+    return (
+      `${who}: полугодие прошло продуктивно. Сильнее всего чувствую вклад в кросс-функциональные проекты и доверие со стороны заказчиков. ` +
+      `Зона развития — жёстче обозначать «не делаю» при перегрузе и раньше просить ресурс. Готов(а) участвовать в калибровочной сессии и обновить ИПР.`
+    );
+  }
+  if (r === "MANAGER") {
+    return (
+      `Как руководитель вижу ${row.reviewee.name} как надёжного исполнителя с высокой планкой качества. ` +
+      `Коллеги ценят готовность помочь; мой запрос — заранее сигнализировать о рисках срыва сроков и не тащить всё в одиночку. ` +
+      `Рекомендую зафиксировать 2–3 приоритетных направления на следующий квартал и согласовать критерии успеха.`
+    );
+  }
+  if (r === "PEER") {
+    const pool = [
+      `Работали вместе над интеграцией и презентацией для клиента. ${row.reviewee.name} тащит детали, внимателен к регрессу, в чате отвечает быстро. ` +
+        `Из зоны роста — иногда уходит в глубокий фокус и меньше видно статуса по зависимостям; короткий ежедневный синк решил бы это.`,
+      `На планировании ${row.reviewee.name} конструктивно спорит с гипотезами, не с людьми — это зрелая позиция. ` +
+        `Хотелось бы чуть больше документирования решений для тех, кто подключился позже.`,
+      `${row.reviewee.name} — человек, к которому идут за советом по процессам. Иногда очередь вопросов мешает собственным дедлайнам — стоит договориться о «тихих часах».`,
+    ];
+    return pool[variant % pool.length]!;
+  }
+  return `Общий комментарий по ${row.reviewee.name}: стабильный уровень взаимодействия, профессиональный тон, готовность к диалогу. Вариант ${variant}.`;
+}
+
+async function submitAssignmentFull(
+  row: AssignmentRow,
   competencyIds: string[],
-  scoreBoost: number,
+  scores: number[],
+  generalText: string,
+  compComments: string[],
 ) {
   for (let i = 0; i < competencyIds.length; i++) {
     await prisma.ratingAnswer.create({
       data: {
-        assignmentId,
+        assignmentId: row.id,
         competencyId: competencyIds[i]!,
-        score: scoreFor(relationship, i, scoreBoost),
+        score: scores[i] ?? 4,
+        comment: compComments[i] ?? null,
       },
     });
   }
-  const text =
-    demoTexts[relationship] ?? "В целом сильный командный игрок; есть запрос на более раннюю эскалацию рисков.";
-  await prisma.textAnswer.create({ data: { assignmentId, body: text } });
+  await prisma.textAnswer.create({ data: { assignmentId: row.id, body: generalText } });
   await prisma.reviewAssignment.update({
-    where: { id: assignmentId },
-    data: { submittedAt: new Date() },
+    where: { id: row.id },
+    data: { submittedAt: new Date("2025-11-18T12:00:00.000Z") },
   });
 }
 
-/** 100 сотрудников: 10 команд × (1 руководитель + 9 сотрудников). Руководитель в той же орггруппе, без managerId. */
-async function seedCompany100() {
+async function seedOrgNordiumDemo(): Promise<void> {
   const dir = await prisma.orgDirection.create({
-    data: { num: 1, name: "Компания (демо, 100 чел.)" },
+    data: { num: 1, name: "ООО «Нордиум» (вся компания)" },
   });
   const dep = await prisma.orgDepartment.create({
-    data: { directionId: dir.id, name: "Операционный блок" },
+    data: { directionId: dir.id, name: "Операционные подразделения" },
   });
   const sub = await prisma.orgSubdivision.create({
     data: { departmentId: dep.id, name: "Команды" },
   });
 
-  const groupIds: string[] = [];
-  for (let i = 1; i <= 10; i++) {
-    const g = await prisma.orgGroup.create({
-      data: { subdivisionId: sub.id, name: `Команда ${i}` },
-    });
-    groupIds.push(g.id);
-  }
+  const gProduct = await prisma.orgGroup.create({
+    data: { subdivisionId: sub.id, name: "Продукт и интеграции" },
+  });
+  const gCx = await prisma.orgGroup.create({
+    data: { subdivisionId: sub.id, name: "Клиентский успех" },
+  });
 
-  let staffCounter = 0;
-  for (let ti = 0; ti < groupIds.length; ti++) {
-    const groupId = groupIds[ti]!;
-    const teamNum = ti + 1;
-    const leadName = teamNum === 1 ? "Дмитрий Орлов" : `Руководитель команды ${teamNum}`;
-    const leadEmail = teamNum === 1 ? "dm@demo.local" : `lead.team${teamNum}@demo.org`;
-    const lead = await prisma.person.create({
+  const dmitry = await prisma.person.create({
+    data: {
+      name: "Дмитрий Волков",
+      title: "Руководитель направления «Продукт»",
+      email: "dm@demo.local",
+      orgGroupId: gProduct.id,
+      managerId: null,
+    },
+  });
+  const productStaff = [
+    { name: "Анна Соколова", email: DEMO_PERSON_EMAIL.employee, title: "Ведущий аналитик" },
+    { name: "Борис Панов", email: DEMO_PERSON_EMAIL.respondentPeer, title: "Инженер по данным" },
+    { name: "Виктория Нова", email: "viktoriya.nova@nordium.demo", title: "UX/UI дизайнер" },
+    { name: "Глеб Артёмов", email: "gleb.artemov@nordium.demo", title: "Разработчик" },
+  ];
+  for (const s of productStaff) {
+    await prisma.person.create({
       data: {
-        name: leadName,
-        title: "Руководитель команды",
-        email: leadEmail,
-        orgGroupId: groupId,
-        managerId: null,
+        name: s.name,
+        title: s.title,
+        email: s.email,
+        orgGroupId: gProduct.id,
+        managerId: dmitry.id,
       },
     });
+  }
 
-    for (let j = 1; j <= 9; j++) {
-      staffCounter += 1;
-      const isAnna = teamNum === 1 && j === 1;
-      await prisma.person.create({
-        data: {
-          name: isAnna ? "Анна Смирнова" : `Сотрудник ${staffCounter}`,
-          title: "Специалист",
-          email: isAnna ? "anna@demo.local" : `staff${staffCounter}@demo.org`,
-          orgGroupId: groupId,
-          managerId: lead.id,
-        },
-      });
+  const elena = await prisma.person.create({
+    data: {
+      name: "Елена Короткова",
+      title: "Руководитель клиентского успеха",
+      email: "elena.lead@nordium.demo",
+      orgGroupId: gCx.id,
+      managerId: null,
+    },
+  });
+  const cxStaff = [
+    { name: "Дарья Мишина", email: "darya.mishina@nordium.demo" },
+    { name: "Жанна Климова", email: "zhanna.klimova@nordium.demo" },
+    { name: "Игорь Светлов", email: "igor.sv@nordium.demo" },
+    { name: "Константин Юрьев", email: "konstantin.yu@nordium.demo" },
+  ];
+  for (const s of cxStaff) {
+    await prisma.person.create({
+      data: {
+        name: s.name,
+        title: "Менеджер сопровождения",
+        email: s.email,
+        orgGroupId: gCx.id,
+        managerId: elena.id,
+      },
+    });
+  }
+}
+
+async function seedAiReportsForCycle(cycleId: string): Promise<void> {
+  const revieweeIds = await prisma.reviewAssignment.findMany({
+    where: { cycleId },
+    distinct: ["revieweeId"],
+    select: { revieweeId: true },
+  });
+
+  for (const { revieweeId } of revieweeIds) {
+    const data = await loadCycleSummary(cycleId, revieweeId, { includeVerbatimFeedback: true });
+    if (!data) continue;
+
+    const roleAveragesReadable: Record<
+      string,
+      { SELF?: number; MANAGER?: number; PEER?: number; SUBORDINATE?: number }
+    > = {};
+    for (const c of data.competencies) {
+      roleAveragesReadable[c.title] = data.roleAveragesByCompetency[c.id]!;
     }
-  }
 
-  const total = await prisma.person.count();
-  if (total !== 100) {
-    console.warn("Ожидалось 100 сотрудников, фактически:", total);
-  }
+    const benchmarks = await loadAiBenchmarkBundle(cycleId, revieweeId, data.competencies);
+    const { report, model } = await runHrAiAgentReport({
+      revieweeName: data.reviewee.name,
+      competencies: data.competencies,
+      roleAverages: roleAveragesReadable,
+      anonymousTextBundle: data.anonymousTextBundle,
+      selfAvg: data.selfAvg,
+      othersAvg: data.othersAvg,
+      benchmarks,
+    });
 
-  return { firstTeamGroupId: groupIds[0]! };
+    const payloadStr = JSON.stringify(report);
+    await prisma.aiReport.upsert({
+      where: { cycleId_revieweeId: { cycleId, revieweeId } },
+      create: { cycleId, revieweeId, payload: payloadStr, model },
+      update: { payload: payloadStr, model },
+    });
+  }
 }
 
 async function main() {
@@ -129,94 +288,56 @@ async function main() {
     await prisma.competency.create({ data: c });
   }
 
-  const { firstTeamGroupId } = await seedCompany100();
+  await seedOrgNordiumDemo();
+
   const comps = await prisma.competency.findMany({ orderBy: { sortOrder: "asc" } });
   const compIds = comps.map((c) => c.id);
 
-  const team1Ids = (
-    await prisma.person.findMany({
-      where: { orgGroupId: firstTeamGroupId },
-      select: { id: true },
-    })
-  ).map((p) => p.id);
-
-  async function seedCycleWithAssignments(opts: {
-    name: string;
-    startsAt: Date;
-    endsAt: Date;
-    semesterPeriodStartsAt: Date;
-    semesterPeriodEndsAt: Date;
-    submitForRevieweeIds: string[] | null;
-    scoreBoost: number;
-  }) {
-    const cycle = await prisma.$transaction(async (tx) => {
-      const c = await tx.reviewCycle.create({
-        data: {
-          name: opts.name,
-          startsAt: opts.startsAt,
-          endsAt: opts.endsAt,
-          semesterPeriodStartsAt: opts.semesterPeriodStartsAt,
-          semesterPeriodEndsAt: opts.semesterPeriodEndsAt,
-          scopeType: "COMPANY",
-        },
-      });
-      await bulkCreateStructuredAssignments(c.id, { db: tx });
-      return c;
+  const cycle = await prisma.$transaction(async (tx) => {
+    const c = await tx.reviewCycle.create({
+      data: {
+        name: "360° · II полугодие 2025 · вся компания (завершён)",
+        semesterPeriodStartsAt: new Date("2025-07-01"),
+        semesterPeriodEndsAt: new Date("2025-12-31"),
+        startsAt: new Date("2025-09-01"),
+        endsAt: new Date("2025-11-30"),
+        scopeType: "COMPANY",
+      },
     });
+    await bulkCreateStructuredAssignments(c.id, { db: tx });
+    return c;
+  });
 
-    if (opts.submitForRevieweeIds?.length) {
-      const toSubmit = await prisma.reviewAssignment.findMany({
-        where: { cycleId: cycle.id, revieweeId: { in: opts.submitForRevieweeIds } },
-        select: { id: true, relationship: true },
-      });
-      for (const row of toSubmit) {
-        await submitAssignment(row.id, row.relationship, compIds, opts.scoreBoost);
-      }
-    }
+  const assignments = await prisma.reviewAssignment.findMany({
+    where: { cycleId: cycle.id },
+    include: { reviewee: true, reviewer: true },
+    orderBy: { id: "asc" },
+  });
 
-    return cycle;
+  let v = 0;
+  for (const a of assignments) {
+    const row: AssignmentRow = {
+      id: a.id,
+      relationship: a.relationship,
+      reviewee: { name: a.reviewee.name },
+      reviewer: { name: a.reviewer.name },
+    };
+    const revieweeFirst = a.reviewee.name.split(/\s+/)[0] ?? a.reviewee.name;
+    const reviewerFirst = a.reviewer.name.split(/\s+/)[0] ?? a.reviewer.name;
+    const scores = scoreSet(a.relationship, v);
+    const comments = competencyCommentsFor(a.relationship, revieweeFirst, reviewerFirst, v);
+    const general = generalTextFor(row, v);
+    await submitAssignmentFull(row, compIds, scores, general, comments);
+    v += 1;
   }
 
-  await seedCycleWithAssignments({
-    name: "360° · I полугодие 2025 · завершён",
-    semesterPeriodStartsAt: new Date("2025-01-01"),
-    semesterPeriodEndsAt: new Date("2025-06-30"),
-    startsAt: new Date("2025-01-08"),
-    endsAt: new Date("2025-06-28"),
-    submitForRevieweeIds: team1Ids,
-    scoreBoost: 0,
-  });
+  await seedAiReportsForCycle(cycle.id);
 
-  await seedCycleWithAssignments({
-    name: "360° · II полугодие 2025 · завершён",
-    semesterPeriodStartsAt: new Date("2025-07-01"),
-    semesterPeriodEndsAt: new Date("2025-12-31"),
-    startsAt: new Date("2025-07-05"),
-    endsAt: new Date("2025-12-22"),
-    submitForRevieweeIds: team1Ids,
-    scoreBoost: 1,
-  });
+  const anna = await prisma.person.findFirst({ where: { email: DEMO_PERSON_EMAIL.employee }, select: { id: true } });
 
-  const current = await seedCycleWithAssignments({
-    name: "360° · I полугодие 2026 · в процессе",
-    semesterPeriodStartsAt: new Date("2026-01-01"),
-    semesterPeriodEndsAt: new Date("2026-06-30"),
-    startsAt: new Date("2026-01-10"),
-    endsAt: new Date("2026-06-30"),
-    submitForRevieweeIds: null,
-    scoreBoost: 0,
-  });
-
-  const pending = await prisma.reviewAssignment.findFirst({
-    where: { cycleId: current.id, submittedAt: null },
-    select: { inviteToken: true },
-  });
-  const anna = await prisma.person.findFirst({ where: { email: "anna@demo.local" }, select: { id: true } });
-
-  console.log("Seed OK — 100 сотрудников (10 команд), циклы с авто-назначениями SELF + руководитель + 1 коллега");
-  console.log("Текущий цикл:", current.id);
-  if (anna) console.log("Оцениваемый (демо):", anna.id);
-  if (pending) console.log("Пример незаполненной анкеты (токен):", pending.inviteToken);
+  console.log("Seed OK — ООО «Нордиум», 10 сотрудников, 1 завершённый цикл 360°, все анкеты + AI-отчёты.");
+  console.log("ID цикла:", cycle.id);
+  if (anna) console.log("Оцениваемый (пример для просмотра):", anna.id);
 }
 
 main()

@@ -11,5 +11,5 @@ export async function generateStaticParams() {
 }
 
 export default function SurveyTokenLayout({ children }: { children: ReactNode }) {
-  return children;
+  return <div className="mx-auto w-full max-w-3xl">{children}</div>;
 }

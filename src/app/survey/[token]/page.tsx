@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { appFetch } from "@/lib/app-fetch";
+import { competencyIconForTitle } from "@/lib/competency-visuals";
+import { demoCompetencyComment, demoGeneralComment } from "@/lib/demo-survey-comments";
 
 type Competency = { id: string; title: string; description: string };
 
@@ -20,8 +22,8 @@ const SCALE_HINTS: Record<number, string> = {
 
 function SurveySkeleton() {
   return (
-    <div className="w-full max-w-3xl space-y-4">
-      <div className="h-9 w-2/3 animate-pulse rounded-lg bg-slate-200" />
+    <div className="w-full space-y-4">
+      <div className="mx-auto h-9 w-2/3 max-w-md animate-pulse rounded-lg bg-slate-200" />
       <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
     </div>
   );
@@ -32,6 +34,93 @@ function formatRuLongDate(iso: string | null | undefined) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
+/** Сроки окна сбора — на всех анкетах одинаково, чтобы участники синхронизировались с HR. */
+function SurveyCollectionBanner({
+  collectionStartsAt,
+  collectionEndsAt,
+  cycleName,
+}: {
+  collectionStartsAt: string | null;
+  collectionEndsAt: string | null;
+  cycleName: string;
+}) {
+  const startLabel = formatRuLongDate(collectionStartsAt);
+  const endLabel = formatRuLongDate(collectionEndsAt);
+  const endMs = collectionEndsAt ? new Date(collectionEndsAt).getTime() : NaN;
+  const daysLeft =
+    Number.isFinite(endMs) && endMs > Date.now() ? Math.ceil((endMs - Date.now()) / 86400000) : null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-slate-50 via-white to-brand-50/20 p-4 shadow-sm ring-1 ring-slate-100/80 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Сроки проведения оценки (сбор)</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-900">{cycleName}</p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-700">
+            {startLabel && endLabel ? (
+              <>
+                Окно открыто: <span className="font-medium text-slate-900">{startLabel}</span>
+                {" — "}
+                <span className="font-medium text-slate-900">{endLabel}</span>
+              </>
+            ) : endLabel ? (
+              <>
+                Завершить анкету желательно до <span className="font-medium text-slate-900">{endLabel}</span>
+              </>
+            ) : startLabel ? (
+              <>
+                Сбор с <span className="font-medium text-slate-900">{startLabel}</span>
+              </>
+            ) : (
+              <span className="text-slate-500">Даты окна заданы HR при запуске цикла — при отсутствии уточните в карточке цикла.</span>
+            )}
+          </p>
+        </div>
+        {daysLeft != null && daysLeft >= 0 ? (
+          <div className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-center shadow-sm ring-1 ring-brand-100">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-800">До закрытия окна</p>
+            <p className="text-xl font-bold tabular-nums text-brand-900">{daysLeft}</p>
+            <p className="text-[10px] font-medium text-slate-600">{daysLeft === 1 ? "день" : daysLeft < 5 ? "дня" : "дней"}</p>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function RespondentSubmittedBanner({
+  collectionStartsAt,
+  collectionEndsAt,
+  cycleName,
+}: {
+  collectionStartsAt: string | null;
+  collectionEndsAt: string | null;
+  cycleName: string;
+}) {
+  const startLabel = formatRuLongDate(collectionStartsAt);
+  const endLabel = formatRuLongDate(collectionEndsAt);
+  return (
+    <div className="rounded-2xl border border-emerald-100/90 bg-emerald-50/40 px-4 py-3 text-sm text-emerald-950 sm:px-5">
+      <p className="font-semibold">Спасибо за участие в цикле</p>
+      <p className="mt-1 text-emerald-900/90">
+        Цикл «{cycleName}»
+        {startLabel && endLabel ? (
+          <>
+            : сбор оценок до <span className="font-medium">{endLabel}</span>. До этой даты коллеги могут ещё отправлять
+            анкеты.
+          </>
+        ) : endLabel ? (
+          <>
+            : активная фаза до <span className="font-medium">{endLabel}</span>.
+          </>
+        ) : (
+          <> — итоговую сводку по сотруднику формирует HR после сбора всех ответов.</>
+        )}
+      </p>
+    </div>
+  );
 }
 
 /** После самооценки: ожидание анкет коллег/руководителя и закрытия окна сбора (HR-практики: статус, сроки, ожидания). */
@@ -116,7 +205,7 @@ function SelfAssessmentNextSteps({
         <li className="flex gap-2">
           <span className="font-bold text-brand-700">3.</span>
           <span>
-            В демо сводку по циклу откройте в роли «Сотрудник» — раздел «Мои результаты» или{" "}
+            Сводку по циклу откройте в роли «Сотрудник» — раздел «Мои результаты» или{" "}
             <Link
               href={`/results/${revieweeId}?cycleId=${encodeURIComponent(cycleId)}`}
               className="font-medium text-brand-800 underline decoration-brand-300 underline-offset-2 hover:text-brand-950"
@@ -241,6 +330,64 @@ export default function SurveyPage() {
     };
   }, [token]);
 
+  /** При выборе балла подставляются примеры комментариев (самооценка или оценка сотрудника). */
+  function applyCompetencyScore(competencyId: string, competencyTitle: string, score: number) {
+    if (!meta) return;
+    setScores((s) => ({ ...s, [competencyId]: score }));
+    setCompetencyComments((prev) => ({
+      ...prev,
+      [competencyId]: demoCompetencyComment({
+        relationship: meta.relationship,
+        competencyTitle,
+        score,
+        revieweeName: meta.revieweeName,
+        reviewerName: meta.reviewerName,
+      }),
+    }));
+  }
+
+  const allCompetenciesScored = useMemo(() => {
+    if (competencies.length === 0) return false;
+    return competencies.every((c) => {
+      const v = scores[c.id];
+      return v >= 1 && v <= 5;
+    });
+  }, [competencies, scores]);
+
+  useEffect(() => {
+    if (loading || submitted || !meta || !allCompetenciesScored) return;
+    setCompetencyComments((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const c of competencies) {
+        if (next[c.id]?.trim()) continue;
+        const v = scores[c.id];
+        if (v < 1 || v > 5) continue;
+        next[c.id] = demoCompetencyComment({
+          relationship: meta.relationship,
+          competencyTitle: c.title,
+          score: v,
+          revieweeName: meta.revieweeName,
+          reviewerName: meta.reviewerName,
+        });
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [loading, submitted, meta, competencies, scores, allCompetenciesScored]);
+
+  useEffect(() => {
+    if (loading || submitted || !meta || !allCompetenciesScored) return;
+    setText((t) => {
+      if (t.trim().length >= 20) return t;
+      return demoGeneralComment({
+        relationship: meta.relationship,
+        revieweeName: meta.revieweeName,
+        reviewerName: meta.reviewerName,
+      });
+    });
+  }, [loading, submitted, meta, allCompetenciesScored]);
+
   const filledCount = useMemo(() => {
     return competencies.filter((c) => scores[c.id] >= 1 && scores[c.id] <= 5).length;
   }, [competencies, scores]);
@@ -305,26 +452,57 @@ export default function SurveyPage() {
   const showReadOnly = submitted;
 
   return (
-    <div className="w-full max-w-3xl space-y-5 pb-24 sm:space-y-6 sm:pb-8">
+    <div className="w-full space-y-5 pb-24 sm:space-y-6 sm:pb-8">
+      <SurveyCollectionBanner
+        collectionStartsAt={meta.collectionStartsAt}
+        collectionEndsAt={meta.collectionEndsAt}
+        cycleName={meta.cycleName}
+      />
+
       <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-card sm:p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Оценка 360°</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          {meta.relationship === "SELF" ? "Самооценка по компетенциям" : "Обратная связь о коллеге"}
+          {meta.relationship === "SELF"
+            ? "Самооценка по компетенциям"
+            : meta.relationship === "MANAGER"
+              ? "Оценка сотрудника (роль руководителя)"
+              : "Оценка сотрудника (приглашённый респондент)"}
         </h1>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200/80">
             {meta.cycleName}
           </span>
           <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 ring-1 ring-brand-100">
-            Ваша роль в оценке: {roleLabel}
+            Ваша роль: {roleLabel}
           </span>
         </div>
-        <p className="mt-4 text-base font-semibold text-slate-900">
-          Оцениваете: <span className="text-brand-800">{meta.revieweeName}</span>
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Оценки по компетенциям и комментарии используются только в обобщённом виде: сотрудник не увидит, кто именно
-          что написал. Пожалуйста, опирайтесь на наблюдаемое поведение и факты.
+
+        {meta.relationship === "SELF" ? (
+          <div className="mt-5 rounded-xl border border-brand-100 bg-gradient-to-br from-brand-50/80 to-white p-4 ring-1 ring-brand-100/60">
+            <p className="text-xs font-bold uppercase tracking-wide text-brand-800">Объект оценки</p>
+            <p className="mt-2 text-base font-semibold text-slate-900">Вы оцениваете себя</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-700">
+              Анкета фиксирует вашу самооценку по шкале и текстам. Оценки руководителя и коллег по тому же циклу
+              приходят им на отдельные ссылки; в вашем итоговом отчёте их комментарии не показываются дословно — только
+              агрегированные баллы и рекомендации на основе ИИ.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-5 rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50/70 to-white p-4 ring-1 ring-violet-100/70">
+            <p className="text-xs font-bold uppercase tracking-wide text-violet-800">Кого вы оцениваете</p>
+            <p className="mt-2 text-xl font-bold tracking-tight text-slate-900">{meta.revieweeName}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Вы заполняете анкету как <span className="font-medium">{roleLabel}</span>. Сотрудник увидит обобщённую
+              картину по баллам и ИИ-сводку; авторство текстовых комментариев для него не раскрывается. Опирайтесь на
+              наблюдаемое поведение и примеры.
+            </p>
+          </div>
+        )}
+
+        <p className="mt-4 text-sm leading-relaxed text-slate-600">
+          {meta.relationship === "SELF"
+            ? "Сохраните анкету одним отправлением. При необходимости правки до дедлайна уточняйте у HR — в продукте это может быть отдельная политика."
+            : "Шкала 1–5 и поля комментариев помогают HR и руководителю готовить развивающий разговор, а не формальную оценку личности."}
         </p>
       </div>
 
@@ -358,7 +536,13 @@ export default function SurveyPage() {
               revieweeId={meta.revieweeId}
               cycleId={meta.cycleId}
             />
-          ) : null}
+          ) : (
+            <RespondentSubmittedBanner
+              cycleName={meta.cycleName}
+              collectionStartsAt={meta.collectionStartsAt}
+              collectionEndsAt={meta.collectionEndsAt}
+            />
+          )}
           <SubmittedSummary
             competencies={competencies}
             scores={scores}
@@ -388,8 +572,9 @@ export default function SurveyPage() {
               <div>
                 <h2 className="text-base font-semibold text-slate-900">Компетенции</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Сначала выберите балл по шкале 1–5. Подсказка к каждому баллу — наведите курсор на цифру. После выбора
-                  можно кратко пояснить оценку (по желанию).
+                  Сначала выберите балл по шкале 1–5. Подсказка к каждому баллу — наведите курсор на цифру. После
+                  выбора балла можно подставить пример комментария (самооценка или оценка сотрудника) — текст можно
+                  изменить. Когда все пять баллов выбраны, подставится и пример общего комментария.
                 </p>
               </div>
 
@@ -406,7 +591,15 @@ export default function SurveyPage() {
                         <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                           Вопрос {idx + 1} из {competencies.length}
                         </span>
-                        <h3 className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-base">{c.title}</h3>
+                        <h3 className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900 sm:text-base">
+                          <span
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-lg shadow-sm ring-1 ring-slate-200/80"
+                            aria-hidden
+                          >
+                            {competencyIconForTitle(c.title)}
+                          </span>
+                          <span>{c.title}</span>
+                        </h3>
                         <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">{c.description}</p>
                       </div>
                       {hasScore ? (
@@ -434,7 +627,7 @@ export default function SurveyPage() {
                               type="radio"
                               name={`score-${c.id}`}
                               checked={scores[c.id] === n}
-                              onChange={() => setScores((s) => ({ ...s, [c.id]: n }))}
+                              onChange={() => applyCompetencyScore(c.id, c.title, n)}
                             />
                             <span className="text-lg font-bold tabular-nums">{n}</span>
                           </label>
@@ -502,10 +695,12 @@ export default function SurveyPage() {
 
             {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div> : null}
 
-            <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200/80 bg-white/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur-md sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-              <button type="submit" disabled={!canSubmit} className="btn-primary h-11 w-full text-sm sm:h-auto sm:min-w-[200px]">
-                Отправить анкету
-              </button>
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.06)] backdrop-blur-md sm:static sm:z-0 sm:mt-6 sm:border-0 sm:bg-transparent sm:shadow-none">
+              <div className="mx-auto max-w-3xl p-3 sm:p-0">
+                <button type="submit" disabled={!canSubmit} className="btn-primary h-11 w-full text-sm sm:h-auto sm:min-w-[200px]">
+                  Отправить анкету
+                </button>
+              </div>
             </div>
           </form>
         </>

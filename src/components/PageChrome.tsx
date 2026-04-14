@@ -5,7 +5,7 @@ export type BreadcrumbItem = { href?: string; label: string };
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Навигация по разделам" className="mb-6 flex flex-wrap items-center gap-1 text-sm">
+    <nav aria-label="Навигация по разделам" className="mb-4 flex flex-wrap items-center gap-1 text-sm sm:mb-6">
       {items.map((item, index) => (
         <span key={`${item.label}-${index}`} className="flex items-center gap-1">
           {index > 0 ? (
@@ -43,7 +43,7 @@ export function PageHero({
   children?: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-7 shadow-card sm:p-9">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-card sm:rounded-3xl sm:p-8 lg:p-9">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400/50 to-transparent"
         aria-hidden
@@ -61,10 +61,18 @@ export function PageHero({
           {kicker ? (
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">{kicker}</p>
           ) : null}
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-[2rem] sm:leading-tight">{title}</h1>
-          {description ? <p className="mt-3 text-base leading-relaxed text-slate-600 sm:text-[1.05rem]">{description}</p> : null}
+          <h1 className="mt-2 text-[1.35rem] font-bold leading-snug tracking-tight text-slate-900 sm:text-3xl sm:leading-tight">
+            {title}
+          </h1>
+          {description ? (
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base sm:leading-relaxed">{description}</p>
+          ) : null}
         </div>
-        {children ? <div className="flex shrink-0 flex-wrap gap-3 lg:justify-end">{children}</div> : null}
+        {children ? (
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-end sm:justify-end sm:gap-3">
+            {children}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -72,7 +80,7 @@ export function PageHero({
 
 export function StatPill({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-center shadow-inner ring-1 ring-white/60 sm:min-w-[7.5rem]">
+    <div className="w-full min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-center shadow-inner ring-1 ring-white/60 sm:w-auto sm:min-w-[7.5rem]">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-xl font-bold tabular-nums tracking-tight text-slate-900">{value}</p>
     </div>

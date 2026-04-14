@@ -4,8 +4,12 @@
 import type { Competency } from "@prisma/client";
 import { emptyRoleAverages, radarRows, type RoleAverages } from "@/lib/aggregates";
 import { parseLocalDateOnly, todayLocalISODate } from "@/lib/date-only";
-import { generateAiReportWithOpenAI } from "@/lib/ai-report";
+import type { AiBenchmarkBundle } from "@/lib/ai-report";
+import { runHrAiAgentReport } from "@/lib/hr-ai-agent";
 import { ACTOR_PERSON_COOKIE, PREVIEW_ROLE_COOKIE } from "@/lib/demo-session";
+import { buildHr360ReportFromAssignments } from "@/lib/cycle-hr-insights";
+import { formatHrSemesterSummary } from "@/lib/employee-past-semesters";
+import { DEMO_PERSON_EMAIL } from "@/lib/demo-personas";
 import { parsePreviewRole, type PreviewRoleId } from "@/lib/roles";
 
 const STORAGE_KEY = "360_feedback_gh_pages_state";
@@ -85,11 +89,15 @@ function resolveViewerFromCookies(cookieHeader: string, persons: JsonRecord[]): 
   const rawActor = c[ACTOR_PERSON_COOKIE]?.trim();
   if (rawActor && persons.some((p) => p.id === rawActor)) return rawActor;
   if (role === "manager") {
-    const p = persons.find((x) => x.email === "dm@demo.local");
+    const p = persons.find((x) => x.email === DEMO_PERSON_EMAIL.manager);
     return (p?.id as string) ?? null;
   }
-  if (role === "employee" || role === "respondent") {
-    const p = persons.find((x) => x.email === "anna@demo.local");
+  if (role === "employee") {
+    const p = persons.find((x) => x.email === DEMO_PERSON_EMAIL.employee);
+    return (p?.id as string) ?? null;
+  }
+  if (role === "respondent") {
+    const p = persons.find((x) => x.email === DEMO_PERSON_EMAIL.respondentPeer);
     return (p?.id as string) ?? null;
   }
   return null;
@@ -136,6 +144,21 @@ function relationshipToKey(r: string): keyof RoleAverages {
       return "SUBORDINATE";
     default:
       return "PEER";
+  }
+}
+
+function relationshipToBundleTag(r: string): string {
+  switch (r) {
+    case "SELF":
+      return "[Самооценка] ";
+    case "MANAGER":
+      return "[Руководитель] ";
+    case "PEER":
+      return "[Коллега] ";
+    case "SUBORDINATE":
+      return "[Подчинённый] ";
+    default:
+      return "[Респондент] ";
   }
 }
 
@@ -216,6 +239,7 @@ function loadCycleSummaryFromState(
 
   for (const a of assignments) {
     const role = relationshipToKey(a.relationship as string);
+    const relTag = relationshipToBundleTag(a.relationship as string);
     const ratings = s.ratingAnswers.filter((r) => r.assignmentId === a.id);
     for (const r of ratings) {
       const cid = r.competencyId as string;
@@ -225,14 +249,14 @@ function loadCycleSummaryFromState(
     }
     if (includeVerbatim) {
       for (const t of s.textAnswers.filter((t) => t.assignmentId === a.id)) {
-        texts.push(t.body as string);
+        texts.push(`${relTag}${t.body as string}`);
       }
       for (const r of ratings) {
         const comment = (r.comment as string | null | undefined)?.trim();
         if (comment) {
           const comp = competencies.find((c) => c.id === r.competencyId);
           const title = comp?.title ?? "компетенция";
-          texts.push(`По «${title}»: ${comment}`);
+          texts.push(`${relTag}По «${title}»: ${comment}`);
         }
       }
     }
@@ -264,6 +288,83 @@ function loadCycleSummaryFromState(
     completion: { completed, total, completionRate },
     selfAvg,
     othersAvg,
+  };
+}
+
+function round1(n: number) {
+  return Math.round(n * 10) / 10;
+}
+
+function computeBenchmarksFromState(s: GhSnapshot, cycleId: string, revieweeId: string): AiBenchmarkBundle {
+  const competencies = s.competencies as unknown as Competency[];
+  const assignNonSelf = s.reviewAssignments.filter(
+    (a) => a.cycleId === cycleId && a.submittedAt && a.relationship !== "SELF",
+  );
+  const byComp = new Map<string, { sum: number; count: number }>();
+  let oSum = 0;
+  let oCount = 0;
+  for (const a of assignNonSelf) {
+    for (const r of s.ratingAnswers.filter((x) => x.assignmentId === a.id)) {
+      const cid = r.competencyId as string;
+      const cell = byComp.get(cid) ?? { sum: 0, count: 0 };
+      cell.sum += Number(r.score);
+      cell.count += 1;
+      byComp.set(cid, cell);
+      oSum += Number(r.score);
+      oCount += 1;
+    }
+  }
+  const byCompetencyTitle: Record<string, number> = {};
+  for (const c of competencies) {
+    const cell = byComp.get(c.id);
+    if (cell && cell.count) byCompetencyTitle[c.title] = round1(cell.sum / cell.count);
+  }
+  const overallOthersAvg = oCount ? round1(oSum / oCount) : null;
+  const nReviewees = new Set(
+    s.reviewAssignments.filter((a) => a.cycleId === cycleId).map((a) => a.revieweeId as string),
+  ).size;
+
+  const rev = s.persons.find((p) => p.id === revieweeId);
+  const jobTitle = ((rev?.title as string | undefined) ?? "").trim() || null;
+  let jtSum = 0;
+  let jtN = 0;
+  let cohort = 0;
+  if (jobTitle) {
+    const cohortIds = new Set(
+      s.persons.filter((p) => String(p.title ?? "").trim() === jobTitle).map((p) => p.id as string),
+    );
+    cohort = cohortIds.size;
+    const jtAssign = assignNonSelf.filter((a) => cohortIds.has(a.revieweeId as string));
+    for (const a of jtAssign) {
+      for (const r of s.ratingAnswers.filter((x) => x.assignmentId === a.id)) {
+        jtSum += Number(r.score);
+        jtN += 1;
+      }
+    }
+  }
+  const jobTitleOverall = jtN ? round1(jtSum / jtN) : null;
+
+  const cycles = [...s.reviewCycles].sort(
+    (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || String(a.id).localeCompare(String(b.id)),
+  );
+  const idx = cycles.findIndex((c) => c.id === cycleId);
+  let previous: AiBenchmarkBundle["previous"] = null;
+  if (idx > 0) {
+    const prev = cycles[idx - 1]!;
+    const prevData = loadCycleSummaryFromState(s, prev.id as string, revieweeId, false);
+    if (prevData) {
+      previous = {
+        cycleName: prev.name as string,
+        selfAvg: prevData.selfAvg,
+        othersAvg: prevData.othersAvg,
+      };
+    }
+  }
+
+  return {
+    company: { overallOthersAvg, byCompetencyTitle, nReviewees },
+    jobTitle: { jobTitle, overallOthersAvg: jobTitleOverall, nRevieweesInCohort: cohort },
+    previous,
   };
 }
 
@@ -684,6 +785,24 @@ export async function ghPagesHandleRequest(
         directionId: x.directionId,
         direction: s.orgDirections.find((d) => d.id === x.directionId) ?? { id: x.directionId, num: 0, name: "" },
       }));
+      const competencies = s.competencies.map((c) => ({ id: c.id as string, title: c.title as string }));
+      const assignmentRows = assignments.map((a) => ({
+        assignmentId: a.id as string,
+        revieweeId: a.revieweeId as string,
+        revieweeName: nameById.get(a.revieweeId as string) ?? "",
+        relationship: a.relationship as string,
+        submittedAt: (a.submittedAt as string | null) ?? null,
+        ratings: s.ratingAnswers
+          .filter((r) => r.assignmentId === a.id)
+          .map((r) => ({ competencyId: r.competencyId as string, score: Number(r.score) })),
+      }));
+      const hr360Report = buildHr360ReportFromAssignments(assignmentRows, competencies);
+      const allCycles = [...s.reviewCycles]
+        .sort(
+          (a, b) =>
+            new Date((b.startsAt as string) ?? 0).getTime() - new Date((a.startsAt as string) ?? 0).getTime(),
+        )
+        .map((c) => ({ id: c.id as string, name: c.name as string }));
       return jsonResponse({
         cycle: {
           id: cycle.id,
@@ -698,6 +817,7 @@ export async function ghPagesHandleRequest(
         reviewees,
         directionBreakdown,
         otherCycles,
+        allCycles,
         assignments: assignments.map((a) => ({
           id: a.id,
           revieweeId: a.revieweeId,
@@ -709,6 +829,7 @@ export async function ghPagesHandleRequest(
           inviteToken: a.inviteToken,
           surveyUrl: `${opts.basePath}/survey/${a.inviteToken}`.replace(/\/{2,}/g, "/"),
         })),
+        hr360Report,
       });
     }
 
@@ -792,7 +913,7 @@ export async function ghPagesHandleRequest(
         (a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime(),
       )[0];
       if (!cycle) return jsonResponse({ ctx: null, viewerId, role });
-      const anna = s.persons.find((p) => p.email === "anna@demo.local");
+      const anna = s.persons.find((p) => p.email === DEMO_PERSON_EMAIL.employee);
       const annaInCycle = anna
         ? s.reviewAssignments.find((a) => a.cycleId === cycle.id && a.revieweeId === anna.id)
         : null;
@@ -803,6 +924,9 @@ export async function ghPagesHandleRequest(
         .filter((a) => a.cycleId === cycle.id && !a.submittedAt)
         .slice(0, 40);
       const nameById = new Map(s.persons.map((p) => [p.id as string, p.name as string]));
+      const isDemoAnnaEmployee = Boolean(anna && anchorRevieweeId === anna.id);
+      const semesterPeriodStartsAt = (cycle.semesterPeriodStartsAt as string | null | undefined) ?? null;
+      const semesterPeriodEndsAt = (cycle.semesterPeriodEndsAt as string | null | undefined) ?? null;
       const ctx = {
         cycleId: cycle.id as string,
         cycleName: cycle.name as string,
@@ -813,6 +937,10 @@ export async function ghPagesHandleRequest(
           reviewerName: nameById.get(p.reviewerId as string) ?? "",
           relationship: p.relationship as string,
         })),
+        isDemoAnnaEmployee,
+        semesterPeriodStartsAt,
+        semesterPeriodEndsAt,
+        evaluationSemesterLabel: formatHrSemesterSummary(semesterPeriodStartsAt, semesterPeriodEndsAt),
       };
       return jsonResponse({ ctx, viewerId, role });
     }
@@ -923,6 +1051,20 @@ export async function ghPagesHandleRequest(
       return jsonResponse({ role, items, avg, latestCycleId, coverage });
     }
 
+    // --- HR AI agent status (статическая сборка: без серверного ключа) ---
+    if (path === "/api/ai/agent" && method === "GET") {
+      return jsonResponse({
+        agentId: "hr-360-report-v2",
+        mode: "demo",
+        configured: false,
+        apiBaseHost: "(static-demo)",
+        model: "demo-local",
+        reportSchemaVersion: 2,
+        note: "GitHub Pages: LLM недоступен в браузере; для реального агента запускайте Next.js с .env.",
+        endpoints: { generateReport: "POST /api/reviewees/:revieweeId/ai?cycleId=…" },
+      });
+    }
+
     // --- reviewees summary / ai ---
     const sumM = path.match(/^\/api\/reviewees\/([^/]+)\/summary$/);
     if (sumM && method === "GET") {
@@ -970,13 +1112,15 @@ export async function ghPagesHandleRequest(
         for (const c of data.competencies) {
           roleAveragesReadable[c.title] = data.roleAveragesByCompetency[c.id]!;
         }
-        const { report, model } = await generateAiReportWithOpenAI({
+        const benchmarks = computeBenchmarksFromState(s, cycleId, revieweeId);
+        const { report, model } = await runHrAiAgentReport({
           revieweeName: data.reviewee.name as string,
           competencies: data.competencies,
           roleAverages: roleAveragesReadable,
           anonymousTextBundle: data.anonymousTextBundle,
           selfAvg: data.selfAvg,
           othersAvg: data.othersAvg,
+          benchmarks,
         });
         const payloadStr = JSON.stringify(report);
         const existing = s.aiReports.findIndex((r) => r.cycleId === cycleId && r.revieweeId === revieweeId);

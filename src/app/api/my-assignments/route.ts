@@ -4,7 +4,7 @@ import { getPreviewRoleFromCookies, resolveViewerPersonId } from "@/lib/demo-ses
 import { prisma } from "@/lib/prisma";
 
 /**
- * Анкеты, где текущий просмотрщик демо — респондент (по cookie роли + ACTOR или дефолт Анна/Дмитрий).
+ * Анкеты текущего просмотрщика (cookie роли + ACTOR или дефолт: сотрудник — Анна Соколова, респондент — Борис Панов, руководитель — Дмитрий Волков).
  * Не требует reviewerId в query — в отличие от /api/respondent.
  */
 export async function GET(req: Request) {

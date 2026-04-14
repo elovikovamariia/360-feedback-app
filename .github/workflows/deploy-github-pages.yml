@@ -1,4 +1,4 @@
-# Статический демо-сборка в ветку gh-pages (GitHub Pages → Settings → Pages → branch gh-pages / root).
+# Статическая сборка в ветку gh-pages (GitHub Pages → Settings → Pages → branch gh-pages / root).
 # NEXT_PUBLIC_BASE_PATH должен совпадать с именем репозитория для Project Pages: https://<user>.github.io/<repo>/
 name: Deploy GitHub Pages
 

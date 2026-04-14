@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildHr360ReportFromAssignments } from "@/lib/cycle-hr-insights";
 import { getCycleDirectionBreakdown } from "@/lib/org-scope";
 import { prisma } from "@/lib/prisma";
 
@@ -12,6 +13,7 @@ export async function GET(_req: Request, { params }: Params) {
       scopedDirections: { include: { direction: { select: { id: true, num: true, name: true } } } },
       assignments: {
         include: {
+          ratings: { select: { competencyId: true, score: true } },
           reviewee: { select: { id: true, name: true } },
           reviewer: { select: { id: true, name: true } },
         },
@@ -44,6 +46,27 @@ export async function GET(_req: Request, { params }: Params) {
 
   const directionBreakdown = await getCycleDirectionBreakdown(cycle.id);
 
+  const competencies = await prisma.competency.findMany({
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, title: true },
+  });
+
+  const assignmentRows = cycle.assignments.map((a) => ({
+    assignmentId: a.id,
+    revieweeId: a.revieweeId,
+    revieweeName: a.reviewee.name,
+    relationship: a.relationship,
+    submittedAt: a.submittedAt ? a.submittedAt.toISOString() : null,
+    ratings: a.ratings.map((r) => ({ competencyId: r.competencyId, score: r.score })),
+  }));
+
+  const hr360Report = buildHr360ReportFromAssignments(assignmentRows, competencies);
+
+  const allCycles = await prisma.reviewCycle.findMany({
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true },
+  });
+
   return NextResponse.json({
     cycle: {
       id: cycle.id,
@@ -74,6 +97,8 @@ export async function GET(_req: Request, { params }: Params) {
       inviteToken: a.inviteToken,
       surveyUrl: `/survey/${a.inviteToken}`,
     })),
+    hr360Report,
+    allCycles,
   });
 }
 

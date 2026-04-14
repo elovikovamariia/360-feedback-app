@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { appFetch } from "@/lib/app-fetch";
+import { DEMO_PERSON_LABEL } from "@/lib/demo-personas";
 
 const REVIEWER_KEY = "360_feedback_reviewer_id";
 
@@ -92,6 +93,14 @@ function AssignmentRow({ a, mode }: { a: Item; mode: "active" | "archive" }) {
         <p className="mt-1 text-sm text-slate-600">
           {a.cycleName} · {relLabel[a.relationship] ?? a.relationship}
         </p>
+        {a.collectionStartsAt || a.collectionEndsAt ? (
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-600">Сбор оценок:</span>
+            <span>
+              {formatRuLongDate(a.collectionStartsAt) ?? "…"} — {formatRuLongDate(a.collectionEndsAt) ?? "…"}
+            </span>
+          </p>
+        ) : null}
         {mode === "archive" && a.submittedAt ? (
           <p className="mt-1 text-xs text-slate-500">
             {new Date(a.submittedAt).toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" })}
@@ -189,10 +198,11 @@ export function RespondentTasksClient() {
       <div className="card p-6 text-sm leading-relaxed text-slate-700 shadow-soft">
         <p className="font-medium text-slate-900">Список анкет пуст</p>
         <p className="mt-2">
-          В демо задания подтягиваются по роли «Просмотр как…»: <strong className="font-medium text-slate-900">Сотрудник</strong> и{" "}
-          <strong className="font-medium text-slate-900">Респондент</strong> — Анна Смирнова;{" "}
-          <strong className="font-medium text-slate-900">Руководитель</strong> — Дмитрий Орлов. В роли HR персона не задана: откройте
-          ссылку из карточки цикла или переключите роль.
+          Задания зависят от роли «Просмотр как…»: <strong className="font-medium text-slate-900">Сотрудник</strong> —{" "}
+          {DEMO_PERSON_LABEL.employee}; <strong className="font-medium text-slate-900">Респондент</strong> —{" "}
+          {DEMO_PERSON_LABEL.respondent} (анкета на коллегу, в т.ч. на {DEMO_PERSON_LABEL.employee});{" "}
+          <strong className="font-medium text-slate-900">Руководитель</strong> — {DEMO_PERSON_LABEL.manager}. Для роли HR откройте
+          ссылку из карточки цикла или переключите роль предпросмотра.
         </p>
         <p className="mt-3 text-xs text-slate-500">
           После запуска цикла у участника две зоны: <strong className="font-medium text-slate-800">самооценка</strong> и{" "}

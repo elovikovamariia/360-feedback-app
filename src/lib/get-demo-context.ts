@@ -1,3 +1,5 @@
+import { formatHrSemesterSummary } from "@/lib/employee-past-semesters";
+import { DEMO_PERSON_EMAIL } from "@/lib/demo-personas";
 import { prisma } from "@/lib/prisma";
 
 export type DemoPendingAssignment = {
@@ -12,13 +14,19 @@ export type DemoContextPayload = {
   cycleName: string;
   revieweeId: string;
   pending: DemoPendingAssignment[];
+  /** Оцениваемый — персона Анна из данных: показывается архив полугодий на «Мои результаты». */
+  isDemoAnnaEmployee?: boolean;
+  semesterPeriodStartsAt?: string | null;
+  semesterPeriodEndsAt?: string | null;
+  /** Подпись к периоду полугодия из цикла (как задал HR). */
+  evaluationSemesterLabel?: string | null;
 };
 
 export async function getDemoContext(): Promise<DemoContextPayload | null> {
   const cycle = await prisma.reviewCycle.findFirst({ orderBy: { createdAt: "desc" } });
   if (!cycle) return null;
   const anna = await prisma.person.findFirst({
-    where: { email: "anna@demo.local" },
+    where: { email: DEMO_PERSON_EMAIL.employee },
     select: { id: true },
   });
   const annaInCycle = anna
@@ -42,6 +50,9 @@ export async function getDemoContext(): Promise<DemoContextPayload | null> {
     orderBy: { id: "asc" },
     take: 40,
   });
+  const isDemoAnnaEmployee = Boolean(anna && anchorRevieweeId === anna.id);
+  const semesterPeriodStartsAt = cycle.semesterPeriodStartsAt?.toISOString() ?? null;
+  const semesterPeriodEndsAt = cycle.semesterPeriodEndsAt?.toISOString() ?? null;
   return {
     cycleId: cycle.id,
     cycleName: cycle.name,
@@ -52,5 +63,9 @@ export async function getDemoContext(): Promise<DemoContextPayload | null> {
       reviewerName: p.reviewer.name,
       relationship: p.relationship,
     })),
+    isDemoAnnaEmployee,
+    semesterPeriodStartsAt,
+    semesterPeriodEndsAt,
+    evaluationSemesterLabel: formatHrSemesterSummary(semesterPeriodStartsAt, semesterPeriodEndsAt),
   };
 }

@@ -1,6 +1,6 @@
 /**
  * Роли и доступ — ориентир: business_analysis_360_feedback_service.md.
- * Режим «просмотр как…» для демо: в продакшене — RBAC из корпоративного каталога.
+ * Режим «просмотр как…» для предпросмотра интерфейса; в продакшене — RBAC из корпоративного каталога.
  */
 
 export const PREVIEW_ROLE_STORAGE_KEY = "360_feedback_preview_role";
@@ -30,7 +30,7 @@ export const PREVIEW_ROLES: {
     access: {
       hr_cycles: true,
       reports: true,
-      directory: true,
+      directory: false,
       own_results: false,
       respondent_tasks: true,
       company_rollups: true,
@@ -54,7 +54,7 @@ export const PREVIEW_ROLES: {
     id: "employee",
     label: "Сотрудник (оцениваемый)",
     shortLabel: "Сотрудник",
-    description: "Самооценка и анкеты как коллега, итоги 360° и рекомендации (в демо — профиль Анны Смирновой).",
+    description: "Самооценка и анкета коллеги, итоги 360° и рекомендации (пример: Анна Соколова).",
     access: {
       hr_cycles: false,
       reports: false,
@@ -68,7 +68,7 @@ export const PREVIEW_ROLES: {
     id: "respondent",
     label: "Респондент",
     shortLabel: "Респондент",
-    description: "Заполнение назначенных анкет и архив (в демо — тот же персонаж, что и «Сотрудник»: Анна).",
+    description: "Заполнение назначенных анкет и архив (пример: Борис Панов, анкета на коллегу).",
     access: {
       hr_cycles: false,
       reports: false,
@@ -107,7 +107,7 @@ export function canAccess(role: PreviewRoleId, key: AccessKey): boolean {
 
 export const ROLE_NAV_ITEMS: { href: string; label: string; require: AccessKey | null }[] = [
   { href: "/", label: "Главная", require: null },
-  { href: "/hr", label: "Циклы 360°", require: "hr_cycles" },
+  { href: "/hr", label: "Оценка 360", require: "hr_cycles" },
   { href: "/tasks", label: "Мои анкеты", require: "respondent_tasks" },
   { href: "/me", label: "Мои результаты", require: "own_results" },
   { href: "/reports", label: "Отчёты", require: "reports" },
@@ -148,11 +148,14 @@ export const ACCESS_HELP: Record<AccessKey, { title: string; bullets: string[] }
     title: "Анкеты респондента",
     bullets: [
       "Активные приглашения и архив отправленных ответов",
-      "В демо список строится по роли просмотра (персона Анны или Дмитрия), без отдельного входа",
+      "Список строится по выбранной роли предпросмотра (без отдельного входа в этом режиме)",
     ],
   },
   company_rollups: {
     title: "Сводка для руководства",
-    bullets: ["Агрегированные показатели без детализации по операциям HR"],
+    bullets: [
+      "Агрегированные показатели без операционной HR-панели",
+      "Карточка цикла: выбор цикла, сводка по компании и переход к отчёту по каждому оцениваемому",
+    ],
   },
 };

@@ -49,7 +49,7 @@ function heroDescription(role: PreviewRoleId) {
   if (role === "executive") {
     return "Сводные показатели по циклам без детальной HR-панели: удобно показать обзор для руководства.";
   }
-  return "Для демо HR: по каждому циклу видно долю заполненных анкет. Откройте сотрудника — радар по компетенциям и сравнение самооценки с оценками руководителя и коллег.";
+  return "По каждому циклу видно долю заполненных анкет. Откройте сотрудника — радар по компетенциям и сравнение самооценки с оценками руководителя и коллег.";
 }
 
 export default function ReportsPage() {
@@ -82,7 +82,7 @@ export default function ReportsPage() {
     <RoleGuard need="reports">
       <div className="space-y-10">
         <Breadcrumbs items={[{ href: "/", label: "Главная" }, { label: "Отчёты" }]} />
-        <PageHero kicker="UC-4 и UC-6" title="Отчёты по циклам" description={heroDescription(role)}>
+        <PageHero kicker="Аналитика · Циклы" title="Отчёты по циклам" description={heroDescription(role)}>
           {items.length > 0 ? (
             <>
               <StatPill label="Циклов" value={items.length} />
@@ -157,7 +157,7 @@ export default function ReportsPage() {
           <div className="rounded-2xl border border-amber-100/90 bg-amber-50/40 p-5 text-sm text-amber-950 shadow-soft">
             <p className="text-xs font-bold uppercase tracking-wide text-amber-900">Подсказки системы</p>
             <p className="mt-2 leading-relaxed">
-              В демо роль «Руководитель» видит только прямых и косвенных подчинённых (по полю руководителя в базе) и
+              Роль «Руководитель» видит прямых и косвенных подчинённых (по полю руководителя в организационных данных) и
               собственные результаты.
             </p>
           </div>
@@ -165,8 +165,7 @@ export default function ReportsPage() {
 
         {items.length === 0 ? (
           <div className="card p-8 text-center text-slate-600">
-            Нет циклов. Создайте данные через{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">npm run db:seed</code>.
+            Нет циклов для отображения. Обратитесь к администратору или добавьте данные в систему.
           </div>
         ) : (
           <ul className="grid gap-5 md:grid-cols-2">
@@ -196,14 +195,36 @@ export default function ReportsPage() {
                         Панель цикла
                       </Link>
                     ) : null}
-                    {c.firstRevieweeId && (
+                    {role === "executive" ? (
+                      <Link href={`/hr/cycles/${c.id}`} className="btn-secondary py-2.5 text-xs sm:text-sm">
+                        Сводка по компании и циклу
+                      </Link>
+                    ) : null}
+                    {c.firstRevieweeId && (role !== "hr_admin" || c.completionRate >= 100) ? (
                       <Link
                         href={`/results/${c.firstRevieweeId}?cycleId=${c.id}`}
                         className="btn-primary py-2.5 text-xs sm:text-sm"
                       >
                         Отчёт и графики
                       </Link>
-                    )}
+                    ) : c.firstRevieweeId && role === "hr_admin" ? (
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          disabled
+                          className="cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-500 sm:text-sm"
+                          title="Доступно после 100% заполнения анкет по циклу"
+                        >
+                          Отчёт (после 100%)
+                        </button>
+                        <Link
+                          href={`/hr/cycles/${c.id}`}
+                          className="text-center text-xs font-semibold text-brand-700 hover:underline"
+                        >
+                          Завершить анкеты в панели цикла
+                        </Link>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </li>

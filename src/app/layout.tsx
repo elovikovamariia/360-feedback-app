@@ -12,25 +12,33 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "360° Feedback — демо для тестового задания",
+  title: "360° Feedback — оценка сотрудников",
   description:
-    "Демо-сервис оценки 360°: запуск цикла на компанию (HR), анкеты респондентов, статус заполнения и отчёты с радаром по компетенциям.",
+    "Сервис оценки 360°: запуск цикла (HR), анкеты респондентов, контроль заполнения и отчёты с радаром по компетенциям.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+  },
+  themeColor: "#f5f3ff",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={inter.variable}>
-      <body className={`${inter.className} flex min-h-screen flex-col`}>
+      <body
+        className={`${inter.className} flex min-h-screen flex-col touch-manipulation antialiased overflow-x-hidden`}
+      >
         <RolePreviewProvider>
           <AppHeader />
           <PreviewRoleBanner />
-          <main className="relative flex-1 px-4 pb-12 pt-8 sm:px-6 sm:pb-14 sm:pt-10">
-            <div className="mx-auto w-full max-w-7xl animate-fade-in">{children}</div>
+          <main className="relative flex-1 min-w-0 px-[max(0.75rem,env(safe-area-inset-left,0px))] pb-[max(3rem,env(safe-area-inset-bottom,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-5 sm:px-5 sm:pb-14 sm:pt-8 md:px-6">
+            <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in">{children}</div>
           </main>
-          <footer className="mt-auto border-t border-slate-200/80 bg-white/80 py-6 text-center text-[11px] leading-relaxed text-slate-500">
-            <div className="mx-auto max-w-2xl px-4">
-              Локальное демо для тестового задания · без реальной аутентификации · не для персональных данных без
-              доработки безопасности
+          <footer className="mt-auto border-t border-slate-200/80 bg-white/80 px-[max(0.75rem,env(safe-area-inset-left,0px))] py-5 pr-[max(0.75rem,env(safe-area-inset-right,0px))] pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] text-center text-[11px] leading-relaxed text-slate-500 sm:py-6">
+            <div className="mx-auto max-w-2xl">
+              В режиме предпросмотра вход по паролю не используется. Для персональных данных применяйте политики и
+              настройки безопасности вашей организации.
             </div>
           </footer>
         </RolePreviewProvider>

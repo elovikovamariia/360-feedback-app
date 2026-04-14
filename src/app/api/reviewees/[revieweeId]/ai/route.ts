@@ -3,8 +3,9 @@ import { NextResponse } from "next/server";
 import { canViewRevieweeResults } from "@/lib/access";
 import { getPreviewRoleFromCookies, resolveViewerPersonId } from "@/lib/demo-session";
 import { loadCycleSummary } from "@/lib/summary";
-import { generateAiReportWithOpenAI } from "@/lib/ai-report";
+import { runHrAiAgentReport } from "@/lib/hr-ai-agent";
 import { prisma } from "@/lib/prisma";
+import { loadAiBenchmarkBundle } from "@/lib/report-benchmarks";
 
 type Params = { params: { revieweeId: string } };
 
@@ -31,13 +32,15 @@ export async function POST(req: Request, { params }: Params) {
     roleAveragesReadable[c.title] = data.roleAveragesByCompetency[c.id]!;
   }
 
-  const { report, model } = await generateAiReportWithOpenAI({
+  const benchmarks = await loadAiBenchmarkBundle(cycleId, revieweeId, data.competencies);
+  const { report, model } = await runHrAiAgentReport({
     revieweeName: data.reviewee.name,
     competencies: data.competencies,
     roleAverages: roleAveragesReadable,
     anonymousTextBundle: data.anonymousTextBundle,
     selfAvg: data.selfAvg,
     othersAvg: data.othersAvg,
+    benchmarks,
   });
 
   const payloadStr = JSON.stringify(report);
