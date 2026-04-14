@@ -14,6 +14,9 @@
 | Документ | Назначение |
 |----------|------------|
 | [TEST_SCENARIO_360.md](./TEST_SCENARIO_360.md) | Пошаговый сценарий проверки UX |
+| [product/Концепция 360° оценки сотрудников.txt](./product/Концепция%20360°%20оценки%20сотрудников.txt) | Концепция 360° |
+| [product/business_analysis_360_feedback_service.md](./product/business_analysis_360_feedback_service.md) | Бизнес-анализ и use case |
+| [product/task-4.html](./product/task-4.html) | Задание 4 (оригинал) |
 | Этот файл | Единый чеклист для письма при сдаче |
 
 ## Обновление публичной сборки (GitHub Pages)
