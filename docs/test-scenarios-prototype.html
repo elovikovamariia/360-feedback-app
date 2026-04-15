@@ -224,7 +224,7 @@
       </div>
       <h3>Персональный итог сотрудника</h3>
       <ol class="steps">
-        <li>Роль <strong>Сотрудник</strong> → <button type="button" class="link" data-path="/me">/me</button> «Мои результаты» <em>или</em> откройте <code>/results/&lt;id&gt;?cycleId=…</code> из ссылки HR.</li>
+        <li>Роль <strong>Сотрудник</strong> → <button type="button" class="link" data-path="/me">/me</button> «Мои результаты» <em>или</em> откройте <code>/results/view?revieweeId=…&amp;cycleId=…</code> из ссылки HR.</li>
         <li>Проверьте: <strong>баллы</strong>, радар, сравнение с окружением, блок ИИ/рекомендаций — при этом <strong>нет</strong> дословных комментариев коллег и руководителя.</li>
       </ol>
       <div class="verify"><b>Что увидеть:</b> агрегаты и пояснения «ваш персональный отчёт»; приватность формулировок респондентов соблюдена.</div>
@@ -244,7 +244,7 @@
 
     <footer>
       <p><strong>Идентификаторы цикла и сотрудника</strong> после <code>npm run db:seed</code> печатаются в консоли — подставьте их в URL вида
-        <code>/hr/cycle?id=&lt;cycleId&gt;</code> и <code>/results/&lt;revieweeId&gt;?cycleId=&lt;cycleId&gt;</code>.</p>
+        <code>/hr/cycle?id=&lt;cycleId&gt;</code> и <code>/results/view?revieweeId=…&amp;cycleId=…</code>.</p>
       <p>Полный текст приёмки: файл <code>docs/TEST_SCENARIO_360.md</code> в репозитории.</p>
     </footer>
   </div>

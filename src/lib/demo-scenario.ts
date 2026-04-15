@@ -143,7 +143,7 @@ export function getContextualDemoHint(role: PreviewRoleId, pathname: string): De
     };
   }
 
-  if (p.startsWith("/results/")) {
+  if (p.startsWith("/results/") || p === "/results/view") {
     return {
       tag: "Отчёт",
       message: "Радар, сравнение самооценки с окружением и блок ИИ с рекомендациями по развитию.",

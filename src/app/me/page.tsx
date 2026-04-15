@@ -9,6 +9,7 @@ import { buildEmployeePastSemesterArchive } from "@/lib/employee-past-semesters"
 import { DEMO_PERSON_LABEL } from "@/lib/demo-personas";
 import type { DemoContextPayload } from "@/lib/get-demo-context";
 import type { PreviewRoleId } from "@/lib/roles";
+import { resultsDetailHref } from "@/lib/results-route";
 
 type MePayload = {
   ctx: DemoContextPayload | null;
@@ -79,8 +80,8 @@ export default function MePage() {
   const revieweeId =
     ctx && viewerId && (role === "manager" || role === "employee") ? (role === "manager" ? viewerId : ctx.revieweeId) : null;
   const resultsHref =
-    ctx && viewerId && (role === "manager" || role === "employee")
-      ? `/results/${revieweeId}?cycleId=${ctx.cycleId}`
+    ctx && viewerId && revieweeId && (role === "manager" || role === "employee")
+      ? resultsDetailHref(revieweeId, ctx.cycleId)
       : null;
 
   const showAnnaArchive = role === "employee" && Boolean(ctx?.isDemoAnnaEmployee);

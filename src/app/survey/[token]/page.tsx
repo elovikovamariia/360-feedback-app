@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { appFetch } from "@/lib/app-fetch";
 import { competencyIconForTitle } from "@/lib/competency-visuals";
 import { demoCompetencyComment, demoGeneralComment } from "@/lib/demo-survey-comments";
+import { resultsDetailHref } from "@/lib/results-route";
 
 type Competency = { id: string; title: string; description: string };
 
@@ -207,7 +208,7 @@ function SelfAssessmentNextSteps({
           <span>
             Сводку по циклу откройте в роли «Сотрудник» — раздел «Мои результаты» или{" "}
             <Link
-              href={`/results/${revieweeId}?cycleId=${encodeURIComponent(cycleId)}`}
+              href={resultsDetailHref(revieweeId, cycleId)}
               className="font-medium text-brand-800 underline decoration-brand-300 underline-offset-2 hover:text-brand-950"
             >
               прямая ссылка на отчёт

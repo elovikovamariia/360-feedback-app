@@ -11,6 +11,7 @@ import { EnterpriseRollupIllustration } from "@/components/EnterpriseRollupIllus
 import { useRolePreview } from "@/components/RolePreviewProvider";
 import { appFetch } from "@/lib/app-fetch";
 import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
+import { resultsDetailHref } from "@/lib/results-route";
 import type { Hr360ReportPayload, HrAnomalySeverity } from "@/lib/cycle-hr-insights";
 
 const relLabel: Record<string, string> = {
@@ -483,7 +484,7 @@ export function HrCycleDetailPageClient({ id }: { id: string }) {
                         <td className="px-6 py-4">
                           <Link
                             className="btn-primary inline-flex py-2 text-xs sm:text-sm"
-                            href={`/results/${r.revieweeId}?cycleId=${cycle.id}`}
+                            href={resultsDetailHref(r.revieweeId, cycle.id)}
                           >
                             Радар и AI
                           </Link>
@@ -671,7 +672,7 @@ export function HrCycleDetailPageClient({ id }: { id: string }) {
                   </div>
                 </div>
                 {cycleFullyDone ? (
-                  <Link className="btn-primary w-full shrink-0 sm:w-auto" href={`/results/${r.id}?cycleId=${cycle.id}`}>
+                  <Link className="btn-primary w-full shrink-0 sm:w-auto" href={resultsDetailHref(r.id, cycle.id)}>
                     Результаты и AI
                   </Link>
                 ) : (

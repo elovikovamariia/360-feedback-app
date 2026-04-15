@@ -5,17 +5,20 @@ import { useSearchParams } from "next/navigation";
 import { RoleGuardAny } from "@/components/RoleGuard";
 import { ResultsClient } from "@/components/ResultsClient";
 
-export function ResultsGate({ revieweeId }: { revieweeId: string }) {
+export function ResultsGate() {
   const searchParams = useSearchParams();
+  const revieweeId = searchParams.get("revieweeId")?.trim();
   const cycleId = searchParams.get("cycleId")?.trim();
 
-  if (!cycleId) {
+  if (!revieweeId || !cycleId) {
     return (
       <div className="card mx-auto max-w-lg p-8 text-center">
-        <p className="text-lg font-semibold text-slate-900">Нужна ссылка с циклом</p>
+        <p className="text-lg font-semibold text-slate-900">Нужна полная ссылка</p>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Откройте эту страницу из HR-панели (кнопка «Результаты и AI») — в адресе должен быть параметр{" "}
-          <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">cycleId=…</code>
+          В адресе должны быть параметры{" "}
+          <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">revieweeId=…</code> и{" "}
+          <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs">cycleId=…</code> (кнопка «Результаты
+          и AI» в карточке цикла).
         </p>
         <Link href="/hr" className="btn-primary mt-6 inline-flex">
           Перейти в HR-панель

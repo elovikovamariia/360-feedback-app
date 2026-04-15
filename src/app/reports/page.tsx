@@ -6,6 +6,7 @@ import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
 import { appFetch } from "@/lib/app-fetch";
 import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
+import { resultsDetailHref } from "@/lib/results-route";
 import type { PreviewRoleId } from "@/lib/roles";
 
 type ReportsDashboardPayload = {
@@ -122,12 +123,14 @@ export default function ReportsPage() {
                         )}
                       </p>
                     </div>
-                    <Link
-                      href={`/results/${row.revieweeId}?cycleId=${latestCycleId}`}
-                      className="btn-secondary shrink-0 py-2 text-xs sm:text-sm"
-                    >
-                      Открыть отчёт
-                    </Link>
+                    {latestCycleId ? (
+                      <Link
+                        href={resultsDetailHref(row.revieweeId, latestCycleId)}
+                        className="btn-secondary shrink-0 py-2 text-xs sm:text-sm"
+                      >
+                        Открыть отчёт
+                      </Link>
+                    ) : null}
                   </div>
                   {row.pendingAssignments.length > 0 ? (
                     <ul className="mt-3 space-y-1.5 text-xs text-slate-600">
@@ -203,7 +206,7 @@ export default function ReportsPage() {
                     ) : null}
                     {c.firstRevieweeId && (role !== "hr_admin" || c.completionRate >= 100) ? (
                       <Link
-                        href={`/results/${c.firstRevieweeId}?cycleId=${c.id}`}
+                        href={resultsDetailHref(c.firstRevieweeId, c.id)}
                         className="btn-primary py-2.5 text-xs sm:text-sm"
                       >
                         Отчёт и графики

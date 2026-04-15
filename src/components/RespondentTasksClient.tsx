@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { appFetch } from "@/lib/app-fetch";
 import { DEMO_PERSON_LABEL } from "@/lib/demo-personas";
+import { resultsDetailHref } from "@/lib/results-route";
 
 const REVIEWER_KEY = "360_feedback_reviewer_id";
 
@@ -270,7 +271,7 @@ export function RespondentTasksClient() {
                         Открыть копию самооценки
                       </Link>
                       <Link
-                        href={`/results/${latestSelfArchive.revieweeId}?cycleId=${encodeURIComponent(latestSelfArchive.cycleId)}`}
+                        href={resultsDetailHref(latestSelfArchive.revieweeId, latestSelfArchive.cycleId)}
                         className="btn-primary inline-flex text-sm"
                       >
                         Сводка по циклу
