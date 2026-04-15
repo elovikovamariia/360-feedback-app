@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
 import { appFetch } from "@/lib/app-fetch";
+import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
 import type { PreviewRoleId } from "@/lib/roles";
 
 type ReportsDashboardPayload = {
@@ -191,12 +192,12 @@ export default function ReportsPage() {
                   </div>
                   <div className="mt-6 flex flex-wrap gap-2">
                     {role === "hr_admin" ? (
-                      <Link href={`/hr/cycles/${c.id}`} className="btn-secondary py-2.5 text-xs sm:text-sm">
+                      <Link href={hrCycleDetailHref(c.id)} className="btn-secondary py-2.5 text-xs sm:text-sm">
                         Панель цикла
                       </Link>
                     ) : null}
                     {role === "executive" ? (
-                      <Link href={`/hr/cycles/${c.id}`} className="btn-secondary py-2.5 text-xs sm:text-sm">
+                      <Link href={hrCycleDetailHref(c.id)} className="btn-secondary py-2.5 text-xs sm:text-sm">
                         Сводка по компании и циклу
                       </Link>
                     ) : null}
@@ -218,7 +219,7 @@ export default function ReportsPage() {
                           Отчёт (после 100%)
                         </button>
                         <Link
-                          href={`/hr/cycles/${c.id}`}
+                          href={hrCycleDetailHref(c.id)}
                           className="text-center text-xs font-semibold text-brand-700 hover:underline"
                         >
                           Завершить анкеты в панели цикла

@@ -10,6 +10,7 @@ import { RoleGuardAny } from "@/components/RoleGuard";
 import { EnterpriseRollupIllustration } from "@/components/EnterpriseRollupIllustration";
 import { useRolePreview } from "@/components/RolePreviewProvider";
 import { appFetch } from "@/lib/app-fetch";
+import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
 import type { Hr360ReportPayload, HrAnomalySeverity } from "@/lib/cycle-hr-insights";
 
 const relLabel: Record<string, string> = {
@@ -235,7 +236,7 @@ export function HrCycleDetailPageClient({ id }: { id: string }) {
                 value={cycle.id}
                 onChange={(e) => {
                   const next = e.target.value;
-                  if (next && next !== cycle.id) router.push(`/hr/cycles/${next}`);
+                  if (next && next !== cycle.id) router.push(hrCycleDetailHref(next));
                 }}
               >
                 {cycleOptions.map((c) => (
@@ -597,7 +598,7 @@ export function HrCycleDetailPageClient({ id }: { id: string }) {
               <ul className="mt-3 space-y-1.5 text-xs">
                 {data.otherCycles.map((oc) => (
                   <li key={oc.id}>
-                    <Link href={`/hr/cycles/${oc.id}`} className="font-medium text-brand-700 hover:text-brand-900 hover:underline">
+                    <Link href={hrCycleDetailHref(oc.id)} className="font-medium text-brand-700 hover:text-brand-900 hover:underline">
                       {oc.name}
                     </Link>
                   </li>

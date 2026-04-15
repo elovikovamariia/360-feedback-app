@@ -7,6 +7,7 @@ import { LaunchCycleForm } from "@/components/LaunchCycleForm";
 import { Breadcrumbs, PageHero, StatPill } from "@/components/PageChrome";
 import { RoleGuard } from "@/components/RoleGuard";
 import { appFetch } from "@/lib/app-fetch";
+import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
 
 const dateFmt = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" });
 
@@ -151,7 +152,7 @@ export function HrCyclesPageClient() {
                     key={c.id}
                     className="card flex flex-col overflow-hidden p-0 shadow-card transition hover:border-brand-200/60 hover:shadow-glow"
                   >
-                    <Link href={`/hr/cycles/${c.id}`} className="group relative flex flex-1 flex-col p-6">
+                    <Link href={hrCycleDetailHref(c.id)} className="group relative flex flex-1 flex-col p-6">
                       <div
                         className="pointer-events-none absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full bg-brand-400/10 blur-2xl transition group-hover:bg-brand-400/15"
                         aria-hidden

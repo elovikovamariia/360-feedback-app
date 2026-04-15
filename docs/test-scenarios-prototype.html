@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Карта тестовых сценариев — 360° Feedback</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --brand: #7c3aed;
+      --brand-soft: #ede9fe;
+      --border: #e2e8f0;
+      --ok: #059669;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    header {
+      background: linear-gradient(135deg, #faf5ff 0%, #fff 50%, #eff6ff 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    .lead { color: var(--muted); margin: 0; font-size: 0.95rem; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .panel h2 { font-size: 1rem; margin: 0 0 0.75rem; }
+    label { font-weight: 600; font-size: 0.85rem; display: block; margin-bottom: 0.35rem; }
+    select, input[type="url"] {
+      width: 100%;
+      max-width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+    .row > div { flex: 1; min-width: 200px; }
+    button.btn {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button.btn:hover { filter: brightness(1.05); }
+    button.link {
+      background: var(--brand-soft);
+      color: #5b21b6;
+      border: 1px solid #ddd6fe;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.link:hover { background: #ddd6fe; }
+    .flow-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.65rem; }
+    .uc-tag { font-weight: 700; color: var(--brand); font-size: 0.8rem; background: var(--brand-soft); padding: 0.2rem 0.5rem; border-radius: 6px; }
+    .role { font-size: 0.82rem; color: #4338ca; background: #eef2ff; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-block; }
+    .flow-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.15rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .flow-card h3 { font-size: 1.02rem; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    .flow-card .steps { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+    .flow-card .steps li { margin: 0.5rem 0; }
+    .flow-card .steps li strong { color: var(--text); }
+    .verify {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      color: #166534;
+    }
+    .verify b { color: #14532d; }
+    .hint { font-size: 0.82rem; color: var(--ok); margin-top: 0.5rem; }
+    footer { margin-top: 2rem; font-size: 0.82rem; color: var(--muted); }
+    code { font-size: 0.82em; background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Карта тестовых сценариев — сервис 360° с AI</h1>
+      <p class="lead">
+        Объединённые сценарии: по шагам — какую роль выбрать в шапке приложения («Просмотр как…»), куда перейти, какие поля заполнить и что увидеть.
+        Кнопки с маршрутами открывают приложение в новой вкладке.
+      </p>
+    </header>
+
+    <div class="panel">
+      <h2>Базовый URL приложения</h2>
+      <div class="row">
+        <div>
+          <label for="preset">Шаблон</label>
+          <select id="preset" aria-label="Шаблон базового URL">
+            <option value="gh">GitHub Pages (демо)</option>
+            <option value="local">Локально (npm run dev)</option>
+            <option value="custom">Свой URL…</option>
+          </select>
+        </div>
+        <div>
+          <label for="baseUrl">Полный базовый адрес (без слэша в конце)</label>
+          <input type="url" id="baseUrl" placeholder="https://…github.io/360-feedback-app" autocomplete="off" />
+        </div>
+        <div>
+          <button type="button" class="btn" id="saveBase">Запомнить в браузере</button>
+        </div>
+      </div>
+      <p class="hint" id="baseHint"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Быстрые ссылки по маршрутам</h2>
+      <p style="margin:0 0 0.75rem; font-size:0.9rem; color:var(--muted);">Открывают приложение в новой вкладке.</p>
+      <p style="margin:0;">
+        <button type="button" class="link" data-path="/">Главная</button>
+        <button type="button" class="link" data-path="/hr">Оценка 360 (HR)</button>
+        <button type="button" class="link" data-path="/tasks">Мои анкеты</button>
+        <button type="button" class="link" data-path="/reports">Отчёты</button>
+        <button type="button" class="link" data-path="/me">Мои результаты</button>
+        <button type="button" class="link" data-path="/team">Команда</button>
+      </p>
+    </div>
+
+    <h2 style="font-size:1.05rem; margin:1.5rem 0 0.75rem;">Сценарии по шагам (объединённые)</h2>
+    <p style="margin:-0.25rem 0 1rem; font-size:0.9rem; color:var(--muted);">Идите сверху вниз: сначала HR и цикл, затем анкеты, затем отчёты. Идентификаторы <code>cycleId</code> / сотрудника — из консоли после <code>npm run db:seed</code> или из клика по циклу в UI.</p>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">UC-1 · UC-4</span>
+        <span class="role">HR</span>
+      </div>
+      <h3>Запуск цикла и контроль сбора</h3>
+      <ol class="steps">
+        <li>В приложении выберите роль <strong>HR</strong> в шапке («Просмотр как…»).</li>
+        <li>Перейдите в раздел <strong>«Оценка 360»</strong> — <button type="button" class="link" data-path="/hr">открыть /hr</button>.</li>
+        <li>В форме <strong>«Запустить цикл»</strong> заполните: <strong>полугодие</strong>, <strong>даты сбора</strong> (начало не раньше сегодня, конец ≥ начала) → отправьте форму.</li>
+        <li>На <strong>карточке цикла</strong> проверьте: блок процесса для HR (этапы 1→2→3), таблицу <strong>«Респонденты»</strong>, у каждой строки — кого оценивают, роль связи, кнопку <strong>«Открыть анкету»</strong>.</li>
+        <li>Вернитесь к списку циклов на <button type="button" class="link" data-path="/hr">/hr</button>: смотрите <strong>% заполнения</strong>. Откройте нужный цикл кликом (URL вида <code>/hr/cycle?id=&lt;cycleId&gt;</code> — так работает статический GitHub Pages) — дашборд, графики, переключатель цикла, если циклов несколько.</li>
+        <li>Когда все анкеты отправлены: баннер <strong>«Цикл завершён»</strong>, якорь к оцениваемым, ссылки <strong>«Результаты и AI»</strong> с <code>cycleId</code> в адресе.</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> назначения self / руководитель / коллега созданы автоматически; при 100% — явный переход к отчётам, без «висящего» цикла.</div>
+    </article>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">UC-3</span>
+        <span class="role">Сотрудник</span>
+        <span class="role">Руководитель</span>
+        <span class="role">Респондент</span>
+      </div>
+      <h3>Самооценка и оценка коллег / руководителя</h3>
+      <ol class="steps">
+        <li><strong>Самооценка:</strong> роль <strong>Сотрудник</strong> (например, Анна Соколова) → <button type="button" class="link" data-path="/tasks">/tasks</button> → блок <strong>«Самооценка»</strong> → <strong>«Заполнить»</strong> (альтернатива — прямая ссылка из таблицы HR на этой же карточке цикла).</li>
+        <li>На странице анкеты <code>/survey/&lt;token&gt;</code>: сверху <strong>сроки сбора</strong>, заголовок самооценки, блок <strong>«Вы оцениваете себя»</strong> — заполните шкалы <strong>1–5</strong> по компетенциям и общий комментарий <strong>не короче 20 символов</strong> → <strong>«Отправить анкету»</strong>.</li>
+        <li><strong>Оценка другого человека:</strong> переключите роль на <strong>Руководитель</strong> или <strong>Респондент</strong> → снова <button type="button" class="link" data-path="/tasks">/tasks</button> → раздел <strong>«Оценка других»</strong> → откройте анкету по нужному ФИО.</li>
+        <li>В анкете проверьте: те же <strong>сроки</strong> в шапке; блок <strong>«Кого вы оцениваете»</strong> с ФИО; подпись роли (руководитель / коллега). Заполните и отправьте.</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> самооценка визуально отделена от «оценки коллеги»; после отправки — блок «Что дальше»; у респондента в архиве свои формулировки, в итоговом отчёте сотруднику — без дословных чужих текстов.</div>
+    </article>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">UC-2</span>
+        <span class="role">Руководитель</span>
+      </div>
+      <h3>Оргконтекст: команда (по желанию перед анкетами)</h3>
+      <ol class="steps">
+        <li>Роль <strong>Руководитель</strong> → <button type="button" class="link" data-path="/team">/team</button>.</li>
+        <li>Ознакомьтесь со списком команды (в демо — фиксированные персоны): это опорная точка для сценария «кто кого оценивает».</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> понятный справочник ФИО и ролей без перехода в HR-панель запуска цикла.</div>
+    </article>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">UC-5 · UC-6 · UC-8 · UC-9</span>
+        <span class="role">HR</span>
+        <span class="role">Руководитель</span>
+        <span class="role">Top Management</span>
+      </div>
+      <h3>Отчёты: радар, HR/AI, бенчмарки и риски</h3>
+      <ol class="steps">
+        <li>После завершения сбора (или на сид-данных) переключите роль на <strong>HR</strong>, <strong>Руководитель</strong> или <strong>Top Management</strong>.</li>
+        <li>Перейдите на <button type="button" class="link" data-path="/reports">/reports</button> <em>или</em> из карточки цикла HR по ссылке <strong>«Результаты и AI»</strong>.</li>
+        <li>На сводке выберите цикл и сотрудника: <strong>радар</strong>, сравнение групп (само / руководитель / коллеги), блок <strong>ИИ v2</strong> (инсайты, риски, план). Если в <code>.env</code> задан <code>OPENAI_API_KEY</code>, проверьте кнопку <strong>«Перегенерировать»</strong>.</li>
+        <li>Для <strong>Top Management</strong>: убедитесь, что доступен обзор отчётности без операционных экранов только HR (запуск цикла — не ваш основной сценарий).</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> структурированный HR-отчёт; бенчмарки и сигналы рисков на сид-данных; у руководителя — доступ к отчётам «своих» людей.</div>
+    </article>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">UC-7</span>
+        <span class="role">Сотрудник</span>
+      </div>
+      <h3>Персональный итог сотрудника</h3>
+      <ol class="steps">
+        <li>Роль <strong>Сотрудник</strong> → <button type="button" class="link" data-path="/me">/me</button> «Мои результаты» <em>или</em> откройте <code>/results/&lt;id&gt;?cycleId=…</code> из ссылки HR.</li>
+        <li>Проверьте: <strong>баллы</strong>, радар, сравнение с окружением, блок ИИ/рекомендаций — при этом <strong>нет</strong> дословных комментариев коллег и руководителя.</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> агрегаты и пояснения «ваш персональный отчёт»; приватность формулировок респондентов соблюдена.</div>
+    </article>
+
+    <article class="flow-card">
+      <div class="flow-meta">
+        <span class="uc-tag">—</span>
+        <span class="role">Любая роль</span>
+      </div>
+      <h3>Главная и быстрый обзор</h3>
+      <ol class="steps">
+        <li>С любой ролью откройте <button type="button" class="link" data-path="/">/</button> — маркетинговый/навигационный обзор; содержимое зависит от выбранной роли в демо.</li>
+      </ol>
+      <div class="verify"><b>Что увидеть:</b> понятные входы в HR, задачи и отчёты без лишних кликов.</div>
+    </article>
+
+    <footer>
+      <p><strong>Идентификаторы цикла и сотрудника</strong> после <code>npm run db:seed</code> печатаются в консоли — подставьте их в URL вида
+        <code>/hr/cycle?id=&lt;cycleId&gt;</code> и <code>/results/&lt;revieweeId&gt;?cycleId=&lt;cycleId&gt;</code>.</p>
+      <p>Полный текст приёмки: файл <code>docs/TEST_SCENARIO_360.md</code> в репозитории.</p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = "360_test_map_base_url";
+      var DEFAULT_GH = "https://elovikovamariia.github.io/360-feedback-app";
+      var DEFAULT_LOCAL = "http://localhost:3000";
+
+      var preset = document.getElementById("preset");
+      var baseUrl = document.getElementById("baseUrl");
+      var hint = document.getElementById("baseHint");
+
+      function normalizeBase(raw) {
+        var s = (raw || "").trim().replace(/\/+$/, "");
+        return s;
+      }
+
+      function applyPreset() {
+        if (preset.value === "gh") baseUrl.value = DEFAULT_GH;
+        else if (preset.value === "local") baseUrl.value = DEFAULT_LOCAL;
+        else {
+          if (!baseUrl.value.trim()) baseUrl.placeholder = DEFAULT_GH;
+        }
+      }
+
+      function loadStored() {
+        try {
+          var s = localStorage.getItem(STORAGE_KEY);
+          if (s) {
+            baseUrl.value = s;
+            if (s.indexOf("localhost") !== -1) preset.value = "local";
+            else if (s === DEFAULT_GH || s.indexOf("github.io") !== -1) preset.value = "gh";
+            else preset.value = "custom";
+          } else {
+            preset.value = "gh";
+            applyPreset();
+          }
+        } catch (e) {
+          preset.value = "gh";
+          applyPreset();
+        }
+      }
+
+      function fullHref(path) {
+        var b = normalizeBase(baseUrl.value);
+        var p = path.charAt(0) === "/" ? path : "/" + path;
+        return b ? b + p : p;
+      }
+
+      function openPath(path) {
+        window.open(fullHref(path), "_blank", "noopener,noreferrer");
+      }
+
+      function refresh() {
+        hint.textContent =
+          "Текущий базовый URL: " + (normalizeBase(baseUrl.value) || "(не задан — укажите для кликабельных ссылок)") + ". Кнопки открывают приложение в новой вкладке.";
+      }
+
+      document.getElementById("saveBase").addEventListener("click", function () {
+        try {
+          localStorage.setItem(STORAGE_KEY, normalizeBase(baseUrl.value));
+          hint.textContent = "Сохранено. Базовый URL: " + normalizeBase(baseUrl.value);
+        } catch (e) {
+          hint.textContent = "Не удалось сохранить (режим приватного окна?).";
+        }
+      });
+
+      preset.addEventListener("change", function () {
+        applyPreset();
+        refresh();
+      });
+
+      baseUrl.addEventListener("input", function () {
+        preset.value = "custom";
+        refresh();
+      });
+
+      document.body.addEventListener("click", function (e) {
+        var t = e.target;
+        if (t && t.getAttribute && t.getAttribute("data-path")) {
+          e.preventDefault();
+          openPath(t.getAttribute("data-path"));
+        }
+      });
+
+      loadStored();
+      refresh();
+    })();
+  </script>
+</body>
+</html>

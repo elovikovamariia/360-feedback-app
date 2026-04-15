@@ -11,6 +11,7 @@ import {
   pickDefaultSemesterKey,
 } from "@/lib/cycle-semester";
 import { isoToRuDots, maxISODate, todayLocalISODate } from "@/lib/date-only";
+import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
 
 type Props = { existingCycleNames: string[]; onCreated?: () => void };
 
@@ -99,7 +100,7 @@ export function LaunchCycleForm({ existingCycleNames, onCreated }: Props) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Ошибка");
       onCreated?.();
-      router.push(`/hr/cycles/${json.id}`);
+      router.push(hrCycleDetailHref(json.id));
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Ошибка");

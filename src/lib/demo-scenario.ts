@@ -43,7 +43,7 @@ export function getContextualDemoHint(role: PreviewRoleId, pathname: string): De
     };
   }
 
-  if (p.startsWith("/hr/cycles/")) {
+  if (p.startsWith("/hr/cycles/") || p === "/hr/cycle") {
     if (role === "hr_admin") {
       return {
         tag: "Назначения",

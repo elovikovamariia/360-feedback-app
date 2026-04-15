@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Тестовые сценарии — 360° Feedback</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #0f172a; }
+    h1 { font-size: 1.35rem; }
+    h2 { font-size: 1.05rem; margin-top: 1.5rem; }
+    code { background: #f1f5f9; padding: 0.12em 0.35em; border-radius: 4px; font-size: 0.9em; }
+    a { color: #5b21b6; }
+    ol { padding-left: 1.25rem; }
+    li { margin: 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Тестовые сценарии 360° Feedback</h1>
+
+  <h2>Быстрый старт</h2>
+  <ol>
+    <li>Откройте в браузере <a href="test-scenarios-prototype.html">test-scenarios-prototype.html</a> — объединённые сценарии по шагам (роль → экран → что заполнить), базовый URL и кнопки на основные маршруты.</li>
+    <li>Полный текст приёмки и пошаговые сценарии — в <a href="TEST_SCENARIO_360.md">TEST_SCENARIO_360.md</a> (в репозитории; в браузере по клику может открыться скачивание — тогда смотрите файл в IDE).</li>
+  </ol>
+  <p>Локально: <code>npm run dev</code>, сид данных — <code>npm run db:seed</code> (id цикла и оцениваемых смотрите в выводе консоли).</p>
+
+  <h2>Если проводник долго открывает папку</h2>
+  <p>Файл можно открыть без обхода по каталогу:</p>
+  <ul>
+    <li><strong>Win+R</strong> — вставьте путь в кавычках и Enter:<br /><code style="display:block; margin-top:0.35rem; word-break:break-all;">"c:\Users\Elovi\OneDrive\Документы\AI\360-feedback-app\docs\test-scenarios-prototype.html"</code></li>
+    <li><strong>PowerShell / терминал Cursor:</strong> <code>Start-Process "…путь…\test-scenarios-prototype.html"</code> (тот же полный путь).</li>
+    <li>В Cursor: откройте HTML в редакторе → <strong>Ctrl+Shift+P</strong> → <strong>Simple Browser</strong> и укажите этот файл (или перетащите вкладку в браузер, если поддерживается).</li>
+  </ul>
+</body>
+</html>

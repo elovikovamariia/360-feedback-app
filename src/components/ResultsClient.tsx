@@ -11,6 +11,7 @@ import { CompletionDonut } from "@/components/charts/CompletionDonut";
 import { ResultsRadar, type RadarRow } from "@/components/ResultsRadar";
 import { normalizeStoredAiReport, type AiReportShape } from "@/lib/ai-report";
 import { EnterpriseRollupIllustration } from "@/components/EnterpriseRollupIllustration";
+import { hrCycleDetailHref } from "@/lib/hr-cycle-route";
 
 type Summary = {
   cycle: { id: string; name: string };
@@ -494,13 +495,13 @@ export function ResultsClient({ revieweeId, cycleId }: { revieweeId: string; cyc
     role === "hr_admin"
       ? [
           { href: "/hr" as const, label: "Оценка 360" },
-          { href: `/hr/cycles/${summary.cycle.id}` as const, label: "Цикл" },
+          { href: hrCycleDetailHref(summary.cycle.id), label: "Цикл" },
           { label: "Результаты" as const },
         ]
       : role === "executive"
         ? [
             { href: "/reports" as const, label: "Отчёты" },
-            { href: `/hr/cycles/${summary.cycle.id}` as const, label: "Сводка по циклу" },
+            { href: hrCycleDetailHref(summary.cycle.id), label: "Сводка по циклу" },
             { label: "Сотрудник" as const },
           ]
         : [
@@ -521,7 +522,7 @@ export function ResultsClient({ revieweeId, cycleId }: { revieweeId: string; cyc
             данные могут быть неполными.
           </p>
           <Link
-            href={`/hr/cycles/${summary.cycle.id}`}
+            href={hrCycleDetailHref(summary.cycle.id)}
             className="mt-3 inline-flex text-sm font-semibold text-amber-950 underline decoration-amber-800/40 underline-offset-2 hover:decoration-amber-950"
           >
             Вернуться в панель цикла
